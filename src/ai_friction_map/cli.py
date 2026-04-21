@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from importlib.resources import files
 from pathlib import Path
 
 from ai_friction_map import __version__
+from ai_friction_map.parser import parse_sessions
 
 ACTIVE_SESSION_WINDOW_HOURS = 12
 
@@ -51,7 +54,18 @@ def _format_not_found(start: Path, checked: list[Path]) -> str:
 
 def _cmd_scan(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
-    print(f"scan: would parse {sessions_dir} and write {args.output}")
+    result = parse_sessions(sessions_dir)
+    template = (
+        files("ai_friction_map")
+        .joinpath("templates/report.html.template")
+        .read_text(encoding="utf-8")
+    )
+    rendered = template.replace("{{DATA}}", json.dumps(result))
+    Path("report.html").write_text(rendered, encoding="utf-8")
+    print(
+        f"Parsed {result['session_count']} sessions across "
+        f"{result['event_count']} events. Report: report.html"
+    )
     return 0
 
 
@@ -86,7 +100,6 @@ def _build_parser() -> argparse.ArgumentParser:
         "scan",
         help="Retrospective scan of all historical sessions for the current project.",
     )
-    scan.add_argument("-o", "--output", default="report.html")
     scan.set_defaults(func=_cmd_scan)
 
     active = subparsers.add_parser(
