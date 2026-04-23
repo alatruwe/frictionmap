@@ -157,8 +157,9 @@ def extract_file_paths(
         return _dedup(paths)
 
     if tool_name == "Agent":
-        # v1 limitation per PROJECT_DESIGN.md: sub-task delegation is opaque;
-        # the sub-agent's own tool calls would need to be logged separately.
+        # Sub-agent file touches live in `progress` events; the parser's
+        # agent_progress walker recovers them. The Agent tool_use itself
+        # doesn't reference files directly.
         return []
 
     if tool_name in _SKIP_TOOLS:

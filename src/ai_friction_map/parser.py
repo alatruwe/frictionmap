@@ -4,8 +4,11 @@ import json
 import logging
 from pathlib import Path
 
+from ai_friction_map.attribution import attribute_thinking_blocks
+from ai_friction_map.clusters import detect_excerpts
 from ai_friction_map.events import Block, Corpus, ParsedEvent, ToolCall
 from ai_friction_map.extraction import extract_file_paths
+from ai_friction_map.leakage import aggregate_leakage
 from ai_friction_map.paths import canonicalize_path
 
 logger = logging.getLogger(__name__)
@@ -41,6 +44,9 @@ def parse_sessions(sessions_dir: Path) -> Corpus:
         corpus.event_count += len(events)
 
     _resolve_tool_calls(corpus)
+    attribute_thinking_blocks(corpus)
+    detect_excerpts(corpus)
+    aggregate_leakage(corpus)
     return corpus
 
 
@@ -82,6 +88,7 @@ def _build_event(raw: dict, event_index: int) -> ParsedEvent:
     session_id = raw.get("sessionId", "")
     cwd = raw.get("cwd")
     blocks = _build_blocks(raw, cwd)
+    subtype = raw.get("subtype") if ev_type == "system" else None
     return ParsedEvent(
         session_id=session_id,
         event_index=event_index,
@@ -92,29 +99,71 @@ def _build_event(raw: dict, event_index: int) -> ParsedEvent:
         parent_uuid=raw.get("parentUuid"),
         blocks=blocks,
         raw_type=ev_type,
+        subtype=subtype,
     )
 
 
 def _build_blocks(raw: dict, cwd: str | None) -> list[Block]:
-    if raw.get("type") not in ("assistant", "user"):
-        return []
-    message = raw.get("message")
-    if not isinstance(message, dict):
-        return []
-    content = message.get("content")
-    if not isinstance(content, list):
-        # user events can have plain-string content (user prompts)
-        return []
+    ev_type = raw.get("type")
+    if ev_type in ("assistant", "user"):
+        message = raw.get("message")
+        if not isinstance(message, dict):
+            return []
+        content = message.get("content")
+        if not isinstance(content, list):
+            # user events can have plain-string content (user prompts)
+            return []
+        return _blocks_from_content(content, cwd, agent_sourced=False)
 
+    if ev_type == "progress":
+        return _walk_agent_progress(raw)
+
+    return []
+
+
+def _walk_agent_progress(raw: dict) -> list[Block]:
+    """Recover nested tool_use / thinking / text / tool_result blocks from
+    an agent_progress event and emit them as blocks on the progress event
+    itself. Missing or malformed nested structure returns [] gracefully.
+    """
+    data = raw.get("data")
+    if not isinstance(data, dict) or data.get("type") != "agent_progress":
+        return []
+    outer_msg = data.get("message")
+    if not isinstance(outer_msg, dict):
+        return []
+    inner_msg = outer_msg.get("message")
+    if not isinstance(inner_msg, dict):
+        return []
+    content = inner_msg.get("content")
+    if not isinstance(content, list):
+        return []
+    cwd = raw.get("cwd")
+    return _blocks_from_content(content, cwd, agent_sourced=True)
+
+
+def _blocks_from_content(
+    content: list,
+    cwd: str | None,
+    agent_sourced: bool = False,
+) -> list[Block]:
     blocks: list[Block] = []
     for item in content:
         if not isinstance(item, dict):
             continue
         btype = item.get("type")
         if btype == "text":
-            blocks.append(Block(type="text", text=item.get("text")))
+            blocks.append(Block(
+                type="text",
+                text=item.get("text"),
+                agent_sourced=agent_sourced,
+            ))
         elif btype == "thinking":
-            blocks.append(Block(type="thinking", thinking=item.get("thinking")))
+            blocks.append(Block(
+                type="thinking",
+                thinking=item.get("thinking"),
+                agent_sourced=agent_sourced,
+            ))
         elif btype == "tool_use":
             tool_input = item.get("input") if isinstance(item.get("input"), dict) else {}
             raw_paths = extract_file_paths(
@@ -129,12 +178,14 @@ def _build_blocks(raw: dict, cwd: str | None) -> list[Block]:
                 tool_use_id=item.get("id"),
                 tool_input=tool_input,
                 file_paths=canon,
+                agent_sourced=agent_sourced,
             ))
         elif btype == "tool_result":
             blocks.append(Block(
                 type="tool_result",
                 tool_use_id=item.get("tool_use_id"),
                 tool_result_content=item.get("content"),
+                agent_sourced=agent_sourced,
             ))
     return blocks
 
