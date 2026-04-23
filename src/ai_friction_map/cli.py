@@ -54,17 +54,21 @@ def _format_not_found(start: Path, checked: list[Path]) -> str:
 
 def _cmd_scan(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
-    result = parse_sessions(sessions_dir)
+    corpus = parse_sessions(sessions_dir)
+    payload = {
+        "session_count": corpus.session_count,
+        "event_count": corpus.event_count,
+    }
     template = (
         files("ai_friction_map")
         .joinpath("templates/report.html.template")
         .read_text(encoding="utf-8")
     )
-    rendered = template.replace("{{DATA}}", json.dumps(result))
+    rendered = template.replace("{{DATA}}", json.dumps(payload))
     Path("report.html").write_text(rendered, encoding="utf-8")
     print(
-        f"Parsed {result['session_count']} sessions across "
-        f"{result['event_count']} events. Report: report.html"
+        f"Parsed {corpus.session_count} sessions across "
+        f"{corpus.event_count} events. Report: report.html"
     )
     return 0
 

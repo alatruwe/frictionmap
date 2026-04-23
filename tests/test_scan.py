@@ -24,12 +24,24 @@ def fake_home(monkeypatch, tmp_path):
     return tmp_path
 
 
+def _event(session_id: str, uuid: str, ev_type: str = "ai-title") -> dict:
+    return {
+        "type": ev_type,
+        "sessionId": session_id,
+        "uuid": uuid,
+        "parentUuid": None,
+        "timestamp": "2026-04-22T00:00:00Z",
+        "cwd": "/proj",
+    }
+
+
 def test_scan_writes_report_html(fake_home, tmp_path, monkeypatch):
     proj = tmp_path / "proj"
     proj.mkdir()
     sessions = _make_sessions_dir(fake_home, proj)
     (sessions / "s1.jsonl").write_text(
-        json.dumps({"i": 1}) + "\n" + json.dumps({"i": 2}) + "\n",
+        json.dumps(_event("s1", "u1")) + "\n"
+        + json.dumps(_event("s1", "u2")) + "\n",
         encoding="utf-8",
     )
 
@@ -43,9 +55,9 @@ def test_scan_report_contains_counts(fake_home, tmp_path, monkeypatch):
     proj.mkdir()
     sessions = _make_sessions_dir(fake_home, proj)
     (sessions / "s1.jsonl").write_text(
-        json.dumps({"i": 1}) + "\n"
-        + json.dumps({"i": 2}) + "\n"
-        + json.dumps({"i": 3}) + "\n",
+        json.dumps(_event("s1", "u1")) + "\n"
+        + json.dumps(_event("s1", "u2")) + "\n"
+        + json.dumps(_event("s1", "u3")) + "\n",
         encoding="utf-8",
     )
 
