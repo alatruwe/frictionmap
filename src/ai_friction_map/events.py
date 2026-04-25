@@ -29,11 +29,35 @@ class Highlight:
 
 
 @dataclass
+class BlockSignals:
+    length_words: int = 0
+    length_chars: int = 0
+    question_rate_per_100w: float = 0.0
+    marker_count: int = 0
+    markers_per_100w: float = 0.0
+    tool_use_coupling: bool = False
+
+
+@dataclass
 class ThinkingExcerpt:
+    """Atomic unit of evidence for a friction signal.
+
+    Fields beyond cluster_index/cluster_count/text/highlights are populated
+    by `report.assemble_report`. Until that runs, they hold default values —
+    do not read them from a Block mid-pipeline.
+    """
     cluster_index: int
     cluster_count: int
     text: str
     highlights: list[Highlight] = field(default_factory=list)
+    agent_sourced: bool = False
+    session_id: str = ""
+    session_id_short: str = ""
+    block_index: int = 0
+    block_total: int = 0
+    block_length_words: int = 0
+    attribution: Attribution | None = None
+    block_signals: BlockSignals = field(default_factory=BlockSignals)
 
 
 @dataclass
@@ -43,6 +67,16 @@ class LeakageCounts:
     bash_retries: int = 0
     read_after_edit: int = 0
     total: int = 0
+
+
+@dataclass
+class ToolUsage:
+    read: int = 0
+    edit: int = 0
+    write: int = 0
+    bash: int = 0
+    grep: int = 0
+    glob: int = 0
 
 
 @dataclass
@@ -94,3 +128,103 @@ class Corpus:
     event_count: int = 0
     unknown_types: dict[str, int] = field(default_factory=dict)
     leakage_by_file: dict[str, LeakageCounts] = field(default_factory=dict)
+    tool_usage_by_file: dict[str, ToolUsage] = field(default_factory=dict)
+
+
+@dataclass
+class CyclomaticMetrics:
+    max: int
+    mean: float
+    sum: int
+
+
+@dataclass
+class FileComplexity:
+    loc: int = 0
+    loc_no_blanks_comments: int = 0
+    char_count: int = 0
+    function_count: int = 0
+    class_count: int = 0
+    cyclomatic: CyclomaticMetrics | None = None
+    halstead_volume: float | None = None
+
+
+@dataclass
+class SignalValue:
+    raw: float = 0.0
+    z_score: float = 0.0
+    weight: float = 0.0
+    contribution: float = 0.0
+
+
+@dataclass
+class ScoreComponents:
+    markers: SignalValue = field(default_factory=SignalValue)
+    block_length_words: SignalValue = field(default_factory=SignalValue)
+    question_rate_per_100w: SignalValue = field(default_factory=SignalValue)
+    tool_use_coupling: SignalValue = field(default_factory=SignalValue)
+    reread_bursts: SignalValue = field(default_factory=SignalValue)
+    edit_churn: SignalValue = field(default_factory=SignalValue)
+    reasoning_to_output_ratio: SignalValue = field(default_factory=SignalValue)
+    normalized_by_loc: float = 0.0
+    normalized_by_complexity: float | None = None
+    multi_file_weight: float = 1.0
+
+
+@dataclass
+class BaselineStat:
+    median: float = 0.0
+    mad: float = 0.0
+    n: int = 0
+    low_confidence: bool = True
+
+
+@dataclass
+class BaselineSet:
+    block_length_words: BaselineStat = field(default_factory=BaselineStat)
+    question_rate_per_100w: BaselineStat = field(default_factory=BaselineStat)
+    markers_per_100w: BaselineStat = field(default_factory=BaselineStat)
+    reasoning_to_output_ratio: BaselineStat = field(default_factory=BaselineStat)
+    tool_use_coupling_rate: BaselineStat = field(default_factory=BaselineStat)
+    leakage_events_per_session: BaselineStat = field(default_factory=BaselineStat)
+
+
+@dataclass
+class Baselines:
+    corpus: BaselineSet = field(default_factory=BaselineSet)
+
+
+@dataclass
+class CodebaseMeta:
+    name: str
+    session_count: int
+    file_count: int
+    thinking_block_count: int
+    total_event_count: int
+    generated_at: str
+    schema_version: str = "1.2"
+
+
+@dataclass
+class FileFriction:
+    path: str
+    name: str
+    directory: str
+    score: float = 0.0
+    tangle_count: int = 0
+    session_count: int = 0
+    loc: int = 0
+    thinking_resolution_rate: float = 0.0
+    score_components: ScoreComponents = field(default_factory=ScoreComponents)
+    complexity: FileComplexity = field(default_factory=FileComplexity)
+    leakage: LeakageCounts = field(default_factory=LeakageCounts)
+    tool_usage: ToolUsage = field(default_factory=ToolUsage)
+    excerpts: list[ThinkingExcerpt] = field(default_factory=list)
+
+
+@dataclass
+class Report:
+    meta: CodebaseMeta
+    baselines: Baselines = field(default_factory=Baselines)
+    session_baselines: dict[str, BaselineSet] = field(default_factory=dict)
+    files: list[FileFriction] = field(default_factory=list)

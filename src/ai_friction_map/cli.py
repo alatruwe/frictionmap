@@ -3,11 +3,19 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import asdict
 from importlib.resources import files
 from pathlib import Path
 
 from ai_friction_map import __version__
 from ai_friction_map.parser import parse_sessions
+from ai_friction_map.report import assemble_report
+from ai_friction_map.sessions import (
+    find_active_sessions,
+    format_relative_time,
+    match_session,
+    summarize_session,
+)
 
 ACTIVE_SESSION_WINDOW_HOURS = 12
 
@@ -55,36 +63,58 @@ def _format_not_found(start: Path, checked: list[Path]) -> str:
 def _cmd_scan(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
     corpus = parse_sessions(sessions_dir)
-    payload = {
-        "session_count": corpus.session_count,
-        "event_count": corpus.event_count,
-    }
+    report = assemble_report(corpus, sessions_dir_name=sessions_dir.name)
     template = (
         files("ai_friction_map")
         .joinpath("templates/report.html.template")
         .read_text(encoding="utf-8")
     )
-    rendered = template.replace("{{DATA}}", json.dumps(payload))
+    rendered = template.replace("{{DATA}}", json.dumps(asdict(report), indent=2))
     Path("report.html").write_text(rendered, encoding="utf-8")
     print(
         f"Parsed {corpus.session_count} sessions across "
-        f"{corpus.event_count} events. Report: report.html"
+        f"{corpus.event_count} events. "
+        f"{len(report.files)} files with friction signals. "
+        f"Report: report.html"
     )
     return 0
 
 
 def _cmd_active_sessions(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
+    sessions = find_active_sessions(sessions_dir, within_hours=ACTIVE_SESSION_WINDOW_HOURS)
+    if not sessions:
+        print(f"No sessions with activity in the last {ACTIVE_SESSION_WINDOW_HOURS} hours.")
+        return 0
     print(
-        f"active-sessions: would list sessions modified within "
-        f"{ACTIVE_SESSION_WINDOW_HOURS}h in {sessions_dir}"
+        f"{len(sessions)} session{'s' if len(sessions) != 1 else ''} "
+        f"with activity in the last {ACTIVE_SESSION_WINDOW_HOURS} hours:"
     )
+    for s in sessions:
+        print(
+            f"  [{s.session_id[:8]}]  \"{s.title}\"    {format_relative_time(s.mtime)}"
+        )
+    print("Run: ai-friction-map session <id-or-title-query>")
     return 0
 
 
 def _cmd_session(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
-    print(f"session: would analyze session matching {args.identifier!r} in {sessions_dir}")
+    result = match_session(sessions_dir, args.identifier)
+    if not result.matches:
+        print(f"No session matched {args.identifier!r}.")
+        return 1
+    if len(result.matches) > 1:
+        print(f"Multiple sessions matched {args.identifier!r}:")
+        for s in result.matches:
+            print(
+                f"  [{s.session_id[:8]}]  \"{s.title}\"    "
+                f"{format_relative_time(s.mtime)}"
+            )
+        print("Re-run with a more specific identifier.")
+        return 1
+    matched = result.matches[0]
+    print(summarize_session(matched.session_id, sessions_dir))
     return 0
 
 

@@ -10,6 +10,7 @@ from ai_friction_map.events import Block, Corpus, ParsedEvent, ToolCall
 from ai_friction_map.extraction import extract_file_paths
 from ai_friction_map.leakage import aggregate_leakage
 from ai_friction_map.paths import canonicalize_path
+from ai_friction_map.tool_usage import aggregate_tool_usage
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ def parse_sessions(sessions_dir: Path) -> Corpus:
     attribute_thinking_blocks(corpus)
     detect_excerpts(corpus)
     aggregate_leakage(corpus)
+    aggregate_tool_usage(corpus)
     return corpus
 
 

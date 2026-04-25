@@ -10,7 +10,7 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [{ name = "Adeline Latruwe" }]
-dependencies = []
+dependencies = ["radon>=6.0"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
