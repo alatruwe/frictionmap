@@ -91,6 +91,7 @@ def _build_event(raw: dict, event_index: int) -> ParsedEvent:
     cwd = raw.get("cwd")
     blocks = _build_blocks(raw, cwd)
     subtype = raw.get("subtype") if ev_type == "system" else None
+    model, is_assistant_like = _extract_model_info(raw)
     return ParsedEvent(
         session_id=session_id,
         event_index=event_index,
@@ -102,7 +103,39 @@ def _build_event(raw: dict, event_index: int) -> ParsedEvent:
         blocks=blocks,
         raw_type=ev_type,
         subtype=subtype,
+        model=model,
+        is_assistant_like=is_assistant_like,
     )
+
+
+def _extract_model_info(raw: dict) -> tuple[str | None, bool]:
+    """Returns (model, is_assistant_like).
+
+    is_assistant_like is True iff this event's content is produced by a
+    Claude model — a top-level assistant turn or a walker-emitted
+    sub-agent assistant turn from an agent_progress event. user-role
+    agent_progress events (sub-agent tool_result frames) are NOT
+    assistant-like; their walker-emitted blocks are tool_results, not
+    model output. A malformed assistant-like event still counts as
+    assistant-like with model=None — the unknown bucket.
+    """
+    ev_type = raw.get("type")
+    if ev_type == "assistant":
+        msg = raw.get("message")
+        model = msg.get("model") if isinstance(msg, dict) else None
+        return model, True
+    if ev_type == "progress":
+        data = raw.get("data")
+        if not isinstance(data, dict) or data.get("type") != "agent_progress":
+            return None, False
+        outer = data.get("message")
+        if not isinstance(outer, dict) or outer.get("type") != "assistant":
+            return None, False
+        inner = outer.get("message")
+        if not isinstance(inner, dict):
+            return None, True
+        return inner.get("model"), True
+    return None, False
 
 
 def _build_blocks(raw: dict, cwd: str | None) -> list[Block]:

@@ -22,6 +22,7 @@ from ai_friction_map.events import (
     Corpus,
     FileFriction,
     LeakageCounts,
+    ModelDistribution,
     Report,
     ThinkingExcerpt,
     ToolUsage,
@@ -107,6 +108,7 @@ def assemble_report(corpus: Corpus, sessions_dir_name: str = "") -> Report:
         total_event_count=corpus.event_count,
         generated_at=datetime.now(timezone.utc).isoformat(),
         schema_version="1.2",
+        model_distribution=_count_models(corpus),
     )
 
     return Report(
@@ -211,6 +213,30 @@ def _count_thinking_blocks(corpus: Corpus) -> int:
                 if block.type == "thinking":
                     total += 1
     return total
+
+
+# Schema entry for model_distribution lives in the Claude Desktop
+# project's schema.md, not in this repo. Update both when the shape
+# changes.
+def _count_models(corpus: Corpus) -> ModelDistribution:
+    events_by_model: dict[str, int] = {}
+    sessions_by_model: dict[str, int] = {}
+    unknown = 0
+    for events in corpus.sessions.values():
+        models_in_session: set[str] = set()
+        for event in events:
+            if event.model is not None:
+                events_by_model[event.model] = events_by_model.get(event.model, 0) + 1
+                models_in_session.add(event.model)
+            elif event.is_assistant_like:
+                unknown += 1
+        for m in models_in_session:
+            sessions_by_model[m] = sessions_by_model.get(m, 0) + 1
+    return ModelDistribution(
+        events_by_model=events_by_model,
+        sessions_by_model=sessions_by_model,
+        unknown_model_event_count=unknown,
+    )
 
 
 def _extract_codebase_name(sessions_dir_name: str) -> str:

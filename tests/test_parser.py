@@ -212,3 +212,29 @@ def test_streaming_memory_smoke(tmp_path):
 
     assert corpus.event_count == 2000
     assert peak < file_size * 10
+
+
+def test_assistant_event_captures_model(tmp_path):
+    record = _assistant("s1", "u1", [{"type": "text", "text": "hi"}])
+    record["message"]["model"] = "claude-opus-4-5-20251101"
+    _jsonl(tmp_path / "s.jsonl", [record])
+    corpus = parse_sessions(tmp_path)
+    event = corpus.sessions["s1"][0]
+    assert event.model == "claude-opus-4-5-20251101"
+    assert event.is_assistant_like is True
+
+
+def test_assistant_event_without_model_is_unknown_assistant_like(tmp_path):
+    _jsonl(tmp_path / "s.jsonl", [_assistant("s1", "u1", [{"type": "text", "text": "hi"}])])
+    corpus = parse_sessions(tmp_path)
+    event = corpus.sessions["s1"][0]
+    assert event.model is None
+    assert event.is_assistant_like is True
+
+
+def test_user_event_is_not_assistant_like(tmp_path):
+    _jsonl(tmp_path / "s.jsonl", [_user("s1", "u1", "prompt text")])
+    corpus = parse_sessions(tmp_path)
+    event = corpus.sessions["s1"][0]
+    assert event.model is None
+    assert event.is_assistant_like is False

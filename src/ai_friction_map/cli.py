@@ -108,9 +108,9 @@ def _cmd_active_sessions(args: argparse.Namespace) -> int:
 def _print_checkpoint(corpus, report) -> None:
     """Phase 3 diagnostic snapshot. Surface anomalies; do not fix.
 
-    Six sections: top-20 ranking, leakage signal correlation, baseline
-    stability, multi-file weight distribution, boundary-clip count,
-    file count. Tuning lives in Phase 5.
+    Seven sections: top-20 ranking, leakage signal correlation, baseline
+    stability, model distribution, multi-file weight distribution,
+    boundary-clip count, file count. Tuning lives in Phase 5.
     """
     from statistics import mean
     print()
@@ -181,9 +181,21 @@ def _print_checkpoint(corpus, report) -> None:
         )
     print(f"  Sessions qualifying for session_baselines: {len(report.session_baselines)}")
 
-    # 4. Multi-file weight distribution.
+    # 4. Models in corpus.
+    md = report.meta.model_distribution
+    print("\n[4] Models in corpus:")
+    rows = sorted(md.events_by_model.items(), key=lambda kv: -kv[1])
+    for name, ev_count in rows:
+        sess_count = md.sessions_by_model.get(name, 0)
+        print(f"  {name:<32}  {ev_count:>7,d} events  {sess_count:>4d} sessions")
+    if md.unknown_model_event_count > 0:
+        print(f"  {'(unknown model)':<32}  {md.unknown_model_event_count:>7,d} events")
+    if not rows and md.unknown_model_event_count == 0:
+        print("  (no model-bearing events)")
+
+    # 5. Multi-file weight distribution.
     weights = [f.score_components.multi_file_weight for f in report.files]
-    print("\n[4] multi_file_weight distribution:")
+    print("\n[5] multi_file_weight distribution:")
     if weights:
         weights_sorted = sorted(weights)
         n = len(weights_sorted)
@@ -195,12 +207,12 @@ def _print_checkpoint(corpus, report) -> None:
     else:
         print("  (no files)")
 
-    # 5. Boundary-clip count.
+    # 6. Boundary-clip count.
     clips = get_boundary_clip_count()
-    print(f"\n[5] Window boundary-clip count: {clips}")
+    print(f"\n[6] Window boundary-clip count: {clips}")
 
-    # 6. File count.
-    print(f"\n[6] Files with friction signals: {len(report.files)}")
+    # 7. File count.
+    print(f"\n[7] Files with friction signals: {len(report.files)}")
     print(f"    Sessions parsed: {corpus.session_count}")
     print(f"    Events parsed: {corpus.event_count}")
     print()

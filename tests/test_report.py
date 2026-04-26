@@ -4,7 +4,7 @@ from pathlib import Path
 
 from ai_friction_map.parser import parse_sessions
 from ai_friction_map.report import _extract_codebase_name, assemble_report
-from tests._factories import assistant, jsonl, user
+from tests._factories import assistant, jsonl, progress, user
 
 
 def _scan(tmp_path: Path) -> tuple:
@@ -284,3 +284,42 @@ def test_multi_file_weight_dilutes_with_shared_attribution(tmp_path: Path) -> No
     file_a = next(f for f in report.files if f.path == "/proj/a.py")
     assert file_a.tangle_count == 2  # full credit per attributed block
     assert file_a.score_components.multi_file_weight < 1.0
+
+
+def test_model_distribution_counts_events_and_sessions(tmp_path: Path) -> None:
+    """Walker-emitted assistant blocks are counted under their own model;
+    a session that runs under both a parent model and a sub-agent model
+    counts toward both in sessions_by_model."""
+    text = [{"type": "text", "text": "ok"}]
+    nested = [{"type": "tool_use", "id": "t1", "name": "Read",
+               "input": {"file_path": "/proj/x.py"}}]
+    jsonl(tmp_path / "a.jsonl", [
+        assistant("sA", "u1", text, model="model_A"),
+        assistant("sA", "u2", text, model="model_A"),
+    ])
+    jsonl(tmp_path / "b.jsonl", [
+        assistant("sB", "u1", text, model="model_A"),
+        progress("sB", "u2", nested, cwd="/proj", model="model_B"),
+    ])
+    _, report = _scan(tmp_path)
+    md = report.meta.model_distribution
+    assert md.events_by_model == {"model_A": 3, "model_B": 1}
+    assert md.sessions_by_model == {"model_A": 2, "model_B": 1}
+    assert md.unknown_model_event_count == 0
+
+
+def test_model_distribution_unknown_bucket_counts_only_assistant_like(tmp_path: Path) -> None:
+    """Assistant events without a model field count toward unknown.
+    user events and user-role agent_progress events do not."""
+    jsonl(tmp_path / "s.jsonl", [
+        assistant("s1", "u1", [{"type": "text", "text": "ok"}]),  # no model kwarg
+        user("s1", "u2", "hello"),
+        progress("s1", "u3",
+                 [{"type": "tool_result", "tool_use_id": "tr", "content": "ok"}],
+                 cwd="/proj", nested_role="user"),
+    ])
+    _, report = _scan(tmp_path)
+    md = report.meta.model_distribution
+    assert md.events_by_model == {}
+    assert md.sessions_by_model == {}
+    assert md.unknown_model_event_count == 1

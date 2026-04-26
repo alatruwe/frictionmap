@@ -115,6 +115,38 @@ def test_agent_progress_grep_tool_use_gets_result_patched_back(tmp_path):
     assert use_block.file_paths == tc.file_paths
 
 
+def test_agent_progress_assistant_role_captures_nested_model(tmp_path):
+    nested = [{"type": "tool_use", "id": "toolu_n", "name": "Read",
+               "input": {"file_path": "/proj/x.py"}}]
+    jsonl(tmp_path / "s.jsonl", [
+        progress("s1", "u1", nested, cwd="/proj", model="claude-haiku-4-5-20251001"),
+    ])
+    corpus = parse_sessions(tmp_path)
+    event = corpus.sessions["s1"][0]
+    assert event.type == "progress"
+    assert event.model == "claude-haiku-4-5-20251001"
+    assert event.is_assistant_like is True
+
+
+def test_agent_progress_user_role_is_not_assistant_like(tmp_path):
+    nested = [{"type": "tool_result", "tool_use_id": "toolu_x", "content": "ok"}]
+    jsonl(tmp_path / "s.jsonl", [
+        progress("s1", "u1", nested, cwd="/proj", nested_role="user"),
+    ])
+    corpus = parse_sessions(tmp_path)
+    event = corpus.sessions["s1"][0]
+    assert event.model is None
+    assert event.is_assistant_like is False
+
+
+def test_non_agent_progress_carries_no_model(tmp_path):
+    jsonl(tmp_path / "s.jsonl", [non_agent_progress("s1", "u1")])
+    corpus = parse_sessions(tmp_path)
+    event = corpus.sessions["s1"][0]
+    assert event.model is None
+    assert event.is_assistant_like is False
+
+
 def test_agent_progress_top_level_and_nested_coexist(tmp_path):
     """Top-level assistant tool_use and a sub-agent tool_use in the same
     session both show up; agent_sourced distinguishes them."""

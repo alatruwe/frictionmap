@@ -106,6 +106,12 @@ class ParsedEvent:
     blocks: list[Block] = field(default_factory=list)
     raw_type: str = ""
     subtype: str | None = None
+    model: str | None = None
+    # is_assistant_like distinguishes "non-assistant event, no model
+    # expected" (False) from "assistant-like event whose model field was
+    # missing or malformed" (True). The unknown-model bucket only counts
+    # the latter.
+    is_assistant_like: bool = False
 
 
 @dataclass
@@ -201,6 +207,13 @@ class Baselines:
 
 
 @dataclass
+class ModelDistribution:
+    events_by_model: dict[str, int] = field(default_factory=dict)
+    sessions_by_model: dict[str, int] = field(default_factory=dict)
+    unknown_model_event_count: int = 0
+
+
+@dataclass
 class CodebaseMeta:
     name: str
     session_count: int
@@ -209,6 +222,7 @@ class CodebaseMeta:
     total_event_count: int
     generated_at: str
     schema_version: str = "1.2"
+    model_distribution: ModelDistribution = field(default_factory=ModelDistribution)
 
 
 @dataclass

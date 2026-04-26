@@ -16,7 +16,16 @@ def jsonl(path: Path, records: list[dict]) -> None:
     )
 
 
-def assistant(session_id: str, uuid: str, content: list[dict], cwd: str = "/proj") -> dict:
+def assistant(
+    session_id: str,
+    uuid: str,
+    content: list[dict],
+    cwd: str = "/proj",
+    model: str | None = None,
+) -> dict:
+    message: dict = {"role": "assistant", "content": content}
+    if model is not None:
+        message["model"] = model
     return {
         "type": "assistant",
         "sessionId": session_id,
@@ -24,7 +33,7 @@ def assistant(session_id: str, uuid: str, content: list[dict], cwd: str = "/proj
         "parentUuid": None,
         "timestamp": "2026-04-22T00:00:00Z",
         "cwd": cwd,
-        "message": {"role": "assistant", "content": content},
+        "message": message,
     }
 
 
@@ -71,8 +80,12 @@ def progress(
     cwd: str = "/proj",
     parent_tool_use_id: str | None = None,
     nested_role: str = "assistant",
+    model: str | None = None,
 ) -> dict:
     nested_message_type = nested_role
+    inner: dict = {"role": nested_role, "content": nested_content}
+    if model is not None:
+        inner["model"] = model
     return {
         "type": "progress",
         "parentToolUseID": parent_tool_use_id,
@@ -88,10 +101,7 @@ def progress(
                 "type": nested_message_type,
                 "timestamp": "2026-04-22T00:00:04Z",
                 "uuid": f"{uuid}-nested",
-                "message": {
-                    "role": nested_role,
-                    "content": nested_content,
-                },
+                "message": inner,
             },
         },
     }
