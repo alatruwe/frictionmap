@@ -37,6 +37,26 @@ def aggregate_leakage(corpus: Corpus, n: int = _DEFAULT_N) -> None:
     corpus.leakage_by_file = counts
 
 
+def count_session_leakage_events(
+    events: list[ParsedEvent], corpus: Corpus, n: int = _DEFAULT_N
+) -> int:
+    """Total leakage events detected within a single session's events,
+    summed across all four event types and all files. Used by the
+    per-session leakage baseline.
+    """
+    counts: dict[str, LeakageCounts] = {}
+    _count_edit_failures(events, corpus, counts, n)
+    _count_grep_reformulations(events, counts, n)
+    _count_bash_retries(events, corpus, counts, n)
+    _count_read_after_edit(events, counts, n)
+    total = 0
+    for c in counts.values():
+        total += (
+            c.edit_failures + c.grep_reformulations + c.bash_retries + c.read_after_edit
+        )
+    return total
+
+
 def _bump(counts: dict[str, LeakageCounts], path: str, field: str) -> None:
     if not path:
         return

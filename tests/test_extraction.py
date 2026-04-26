@@ -110,17 +110,38 @@ def test_agent_returns_empty():
 
 
 def test_skip_list_tools_return_empty():
-    for name in ("TodoWrite", "ExitPlanMode", "ToolSearch", "AskUserQuestion", "WebSearch"):
+    for name in (
+        "TodoWrite", "ExitPlanMode", "ToolSearch", "AskUserQuestion",
+        "WebSearch", "WebFetch",
+    ):
         assert extract_file_paths(name, {"anything": "here"}, None) == []
 
 
-def test_unknown_tool_returns_empty_and_logs(caplog):
-    # First call warns, subsequent calls do not (logged once).
-    with caplog.at_level("WARNING", logger="ai_friction_map.extraction"):
-        extract_file_paths("MysteryTool1", {"x": 1}, None)
-        extract_file_paths("MysteryTool1", {"x": 2}, None)
-    warnings = [r for r in caplog.records if "MysteryTool1" in r.getMessage()]
-    assert len(warnings) == 1
+def test_unknown_tool_returns_empty_silently_with_debug_log(caplog):
+    # Anthropic ships new tools regularly; unknown tools default to a
+    # graceful skip — no WARNING. DEBUG fires exactly once for the first
+    # occurrence (diagnostic visibility) and is suppressed thereafter
+    # via the _logged_unknown_tools dedup set. Both invariants matter:
+    # silent stdout/stderr for users, and a one-shot diagnostic that
+    # survives future refactors.
+    with caplog.at_level("DEBUG", logger="ai_friction_map.extraction"):
+        result1 = extract_file_paths("MysteryTool1", {"x": 1}, None)
+        result2 = extract_file_paths("MysteryTool1", {"x": 2}, None)
+    assert result1 == []
+    assert result2 == []
+    warnings = [
+        r for r in caplog.records
+        if "MysteryTool1" in r.getMessage() and r.levelname == "WARNING"
+    ]
+    assert warnings == []
+    debugs = [
+        r for r in caplog.records
+        if "MysteryTool1" in r.getMessage() and r.levelname == "DEBUG"
+    ]
+    assert len(debugs) == 1, (
+        "expected exactly one DEBUG log on first occurrence; got "
+        f"{len(debugs)}"
+    )
 
 
 def test_grep_result_with_dict_content():

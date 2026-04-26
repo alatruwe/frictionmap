@@ -7,16 +7,17 @@ score_components, baselines) are emitted as zero/empty scaffolds; Phase
 """
 from __future__ import annotations
 
-import re
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ai_friction_map.clusters import find_markers
+from ai_friction_map.baselines import (
+    compute_corpus_baseline,
+    compute_session_baselines,
+)
 from ai_friction_map.complexity import compute_file_complexity
 from ai_friction_map.events import (
     Baselines,
-    BlockSignals,
     CodebaseMeta,
     Corpus,
     FileFriction,
@@ -25,9 +26,7 @@ from ai_friction_map.events import (
     ThinkingExcerpt,
     ToolUsage,
 )
-
-
-_WORD_RE = re.compile(r"\S+")
+from ai_friction_map.scoring import compute_block_signals, score_corpus
 
 
 def assemble_report(corpus: Corpus, sessions_dir_name: str = "") -> Report:
@@ -42,26 +41,60 @@ def assemble_report(corpus: Corpus, sessions_dir_name: str = "") -> Report:
     excerpts_by_file = _index_excerpts_by_file(expanded_excerpts_per_session)
     sessions_by_file = _sessions_by_file(corpus, expanded_excerpts_per_session)
 
+    corpus_baseline = compute_corpus_baseline(corpus)
+    session_baselines = compute_session_baselines(corpus)
+    file_scores = score_corpus(corpus, corpus_baseline)
+
     files: list[FileFriction] = []
     for path in sorted(interesting_files):
         complexity = compute_file_complexity(path)
         leakage = corpus.leakage_by_file.get(path, LeakageCounts())
         tool_usage = corpus.tool_usage_by_file.get(path, ToolUsage())
+        # Drop URL fragments, git-revision shorthand, ephemeral temp dirs,
+        # and number-shaped tokens that score / max(loc, 1) = score / 1
+        # boosts to the top. Filter when the file isn't on disk AND Claude
+        # never edited or wrote it — keeps Claude-touched-and-deleted files.
+        if (
+            complexity.loc == 0
+            and tool_usage.edit == 0
+            and tool_usage.write == 0
+        ):
+            continue
         excerpts = sorted(
             excerpts_by_file.get(path, []),
             key=lambda e: (-e.block_signals.marker_count, -e.cluster_count, e.block_index),
         )[:5]
         path_obj = Path(path)
+        score_result = file_scores.get(path)
+        if score_result is not None:
+            components = score_result.components
+            score_pre = score_result.score_pre_normalization
+            tangle_count = score_result.tangle_count
+            thinking_resolution_rate = score_result.thinking_resolution_rate
+        else:
+            components = FileFriction.__dataclass_fields__["score_components"].default_factory()
+            score_pre = 0.0
+            tangle_count = 0
+            thinking_resolution_rate = 0.0
+        components.normalized_by_loc = score_pre / max(complexity.loc, 1)
+        if complexity.cyclomatic and complexity.cyclomatic.sum > 0:
+            components.normalized_by_complexity = score_pre / complexity.cyclomatic.sum
+        else:
+            components.normalized_by_complexity = None
         files.append(FileFriction(
             path=path,
             name=path_obj.name,
             directory=str(path_obj.parent) + "/",
+            score=components.normalized_by_loc,
+            tangle_count=tangle_count,
+            thinking_resolution_rate=thinking_resolution_rate,
             session_count=len(sessions_by_file.get(path, set())),
             loc=complexity.loc,
             complexity=complexity,
             leakage=leakage,
             tool_usage=tool_usage,
             excerpts=excerpts,
+            score_components=components,
         ))
 
     files.sort(key=lambda f: f.score, reverse=True)
@@ -78,8 +111,8 @@ def assemble_report(corpus: Corpus, sessions_dir_name: str = "") -> Report:
 
     return Report(
         meta=meta,
-        baselines=Baselines(),
-        session_baselines={},
+        baselines=Baselines(corpus=corpus_baseline),
+        session_baselines=session_baselines,
         files=files,
     )
 
@@ -92,24 +125,16 @@ def _expand_excerpts(corpus: Corpus) -> dict[str, list[ThinkingExcerpt]]:
     """
     out: dict[str, list[ThinkingExcerpt]] = {}
     for session_id, events in corpus.sessions.items():
-        thinking_blocks = [
-            (event, block)
-            for event in events
-            for block in event.blocks
-            if block.type == "thinking" and block.thinking
-        ]
-        block_total = len(thinking_blocks)
+        thinking_entries: list[tuple[int, object]] = []
+        for event_idx, event in enumerate(events):
+            for block in event.blocks:
+                if block.type == "thinking" and block.thinking:
+                    thinking_entries.append((event_idx, block))
+        block_total = len(thinking_entries)
         expanded: list[ThinkingExcerpt] = []
-        for block_index, (_event, block) in enumerate(thinking_blocks):
+        for block_index, (event_idx, block) in enumerate(thinking_entries):
             text = block.thinking or ""
-            length_words = _word_count(text)
-            length_chars = len(text)
-            marker_count = len(find_markers(text))
-            block_signals = BlockSignals(
-                length_words=length_words,
-                length_chars=length_chars,
-                marker_count=marker_count,
-            )
+            block_signals = compute_block_signals(text, event_idx, events)
             for excerpt in block.excerpts:
                 expanded.append(replace(
                     excerpt,
@@ -118,7 +143,7 @@ def _expand_excerpts(corpus: Corpus) -> dict[str, list[ThinkingExcerpt]]:
                     session_id_short=session_id[:8],
                     block_index=block_index,
                     block_total=block_total,
-                    block_length_words=length_words,
+                    block_length_words=block_signals.length_words,
                     attribution=block.attribution,
                     block_signals=block_signals,
                 ))
@@ -186,10 +211,6 @@ def _count_thinking_blocks(corpus: Corpus) -> int:
                 if block.type == "thinking":
                     total += 1
     return total
-
-
-def _word_count(text: str) -> int:
-    return len(_WORD_RE.findall(text))
 
 
 def _extract_codebase_name(sessions_dir_name: str) -> str:

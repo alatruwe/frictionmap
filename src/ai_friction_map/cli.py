@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import asdict
 from importlib.resources import files
 from pathlib import Path
 
 from ai_friction_map import __version__
+from ai_friction_map.baselines import save_baseline_cache
 from ai_friction_map.parser import parse_sessions
 from ai_friction_map.report import assemble_report
 from ai_friction_map.sessions import (
@@ -16,6 +18,7 @@ from ai_friction_map.sessions import (
     match_session,
     summarize_session,
 )
+from ai_friction_map.windows import get_boundary_clip_count, reset_boundary_clip_count
 
 ACTIVE_SESSION_WINDOW_HOURS = 12
 
@@ -62,6 +65,7 @@ def _format_not_found(start: Path, checked: list[Path]) -> str:
 
 def _cmd_scan(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
+    reset_boundary_clip_count()
     corpus = parse_sessions(sessions_dir)
     report = assemble_report(corpus, sessions_dir_name=sessions_dir.name)
     template = (
@@ -71,12 +75,15 @@ def _cmd_scan(args: argparse.Namespace) -> int:
     )
     rendered = template.replace("{{DATA}}", json.dumps(asdict(report), indent=2))
     Path("report.html").write_text(rendered, encoding="utf-8")
+    save_baseline_cache(report.baselines.corpus)
     print(
         f"Parsed {corpus.session_count} sessions across "
         f"{corpus.event_count} events. "
         f"{len(report.files)} files with friction signals. "
         f"Report: report.html"
     )
+    if args.checkpoint or os.environ.get("AI_FRICTION_MAP_CHECKPOINT") == "1":
+        _print_checkpoint(corpus, report)
     return 0
 
 
@@ -96,6 +103,122 @@ def _cmd_active_sessions(args: argparse.Namespace) -> int:
         )
     print("Run: ai-friction-map session <id-or-title-query>")
     return 0
+
+
+def _print_checkpoint(corpus, report) -> None:
+    """Phase 3 diagnostic snapshot. Surface anomalies; do not fix.
+
+    Six sections: top-20 ranking, leakage signal correlation, baseline
+    stability, multi-file weight distribution, boundary-clip count,
+    file count. Tuning lives in Phase 5.
+    """
+    from statistics import mean
+    print()
+    print("=" * 70)
+    print("Phase 3 checkpoint")
+    print("=" * 70)
+
+    # 1. Top-20 ranking with dominant-component flag.
+    top = sorted(report.files, key=lambda f: f.score, reverse=True)[:20]
+    print("\n[1] Top-20 by score (normalized_by_loc):")
+    print(f"{'rank':>4}  {'score':>10}  {'tangle':>6}  {'mfw':>5}  "
+          f"{'top-component':<28}  path")
+    for i, f in enumerate(top, 1):
+        comp_pairs = [
+            (name, getattr(f.score_components, name).contribution)
+            for name in (
+                "markers", "block_length_words", "question_rate_per_100w",
+                "tool_use_coupling", "reread_bursts", "edit_churn",
+                "reasoning_to_output_ratio", "edit_failures",
+                "grep_reformulations", "bash_retries", "read_after_edit",
+            )
+        ]
+        comp_pairs.sort(key=lambda p: abs(p[1]), reverse=True)
+        top_name, top_contrib = comp_pairs[0]
+        print(
+            f"{i:>4}  {f.score:>10.4f}  {f.tangle_count:>6}  "
+            f"{f.score_components.multi_file_weight:>5.2f}  "
+            f"{top_name + f'({top_contrib:+.2f})':<28}  {f.path}"
+        )
+
+    # 2. Mean pairwise correlation among the four leakage raw values.
+    leak_signals = ("edit_failures", "grep_reformulations", "bash_retries", "read_after_edit")
+    rows = [
+        [getattr(f.score_components, s).raw for s in leak_signals]
+        for f in report.files
+    ]
+    print("\n[2] Mean pairwise correlation across 4 leakage raw values:")
+    if len(rows) >= 2:
+        cols = list(zip(*rows))
+        corrs: list[float] = []
+        for i in range(len(leak_signals)):
+            for j in range(i + 1, len(leak_signals)):
+                corrs.append(_pearson(cols[i], cols[j]))
+        if corrs:
+            avg = mean(corrs)
+            flag = "  [FLAG: > 0.5 — Phase 5 may want to collapse leakage]" if avg > 0.5 else ""
+            print(f"  mean(r) = {avg:+.3f}{flag}")
+        else:
+            print("  (no correlations computable)")
+    else:
+        print("  (not enough files)")
+
+    # 3. Baseline stability — corpus baseline + qualifying-session count.
+    print("\n[3] Corpus baseline (median, MAD, n):")
+    bs = report.baselines.corpus
+    fields = (
+        "block_length_words", "question_rate_per_100w", "markers_per_100w",
+        "reasoning_to_output_ratio", "tool_use_coupling_rate",
+        "leakage_events_per_session", "reread_bursts_per_file",
+        "edit_churn_per_file",
+    )
+    for name in fields:
+        stat = getattr(bs, name)
+        print(
+            f"  {name:<32}  median={stat.median:>9.3f}  "
+            f"mad={stat.mad:>9.3f}  n={stat.n:>5}"
+            f"{'  (low_confidence)' if stat.low_confidence else ''}"
+        )
+    print(f"  Sessions qualifying for session_baselines: {len(report.session_baselines)}")
+
+    # 4. Multi-file weight distribution.
+    weights = [f.score_components.multi_file_weight for f in report.files]
+    print("\n[4] multi_file_weight distribution:")
+    if weights:
+        weights_sorted = sorted(weights)
+        n = len(weights_sorted)
+        p50 = weights_sorted[n // 2]
+        p10 = weights_sorted[max(0, n // 10)]
+        at_one = sum(1 for w in weights if w >= 0.999)
+        print(f"  n={n}  p10={p10:.3f}  p50={p50:.3f}  "
+              f"max={max(weights):.3f}  files_at_1.0={at_one}")
+    else:
+        print("  (no files)")
+
+    # 5. Boundary-clip count.
+    clips = get_boundary_clip_count()
+    print(f"\n[5] Window boundary-clip count: {clips}")
+
+    # 6. File count.
+    print(f"\n[6] Files with friction signals: {len(report.files)}")
+    print(f"    Sessions parsed: {corpus.session_count}")
+    print(f"    Events parsed: {corpus.event_count}")
+    print()
+
+
+def _pearson(xs, ys) -> float:
+    n = len(xs)
+    if n < 2:
+        return 0.0
+    mx = sum(xs) / n
+    my = sum(ys) / n
+    num = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    dx2 = sum((x - mx) ** 2 for x in xs)
+    dy2 = sum((y - my) ** 2 for y in ys)
+    denom = (dx2 * dy2) ** 0.5
+    if denom <= 0:
+        return 0.0
+    return num / denom
 
 
 def _cmd_session(args: argparse.Namespace) -> int:
@@ -133,6 +256,11 @@ def _build_parser() -> argparse.ArgumentParser:
     scan = subparsers.add_parser(
         "scan",
         help="Retrospective scan of all historical sessions for the current project.",
+    )
+    scan.add_argument(
+        "--checkpoint",
+        action="store_true",
+        help="Print Phase 3 diagnostic checkpoint after scanning.",
     )
     scan.set_defaults(func=_cmd_scan)
 

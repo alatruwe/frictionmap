@@ -166,6 +166,10 @@ class ScoreComponents:
     reread_bursts: SignalValue = field(default_factory=SignalValue)
     edit_churn: SignalValue = field(default_factory=SignalValue)
     reasoning_to_output_ratio: SignalValue = field(default_factory=SignalValue)
+    edit_failures: SignalValue = field(default_factory=SignalValue)
+    grep_reformulations: SignalValue = field(default_factory=SignalValue)
+    bash_retries: SignalValue = field(default_factory=SignalValue)
+    read_after_edit: SignalValue = field(default_factory=SignalValue)
     normalized_by_loc: float = 0.0
     normalized_by_complexity: float | None = None
     multi_file_weight: float = 1.0
@@ -187,6 +191,8 @@ class BaselineSet:
     reasoning_to_output_ratio: BaselineStat = field(default_factory=BaselineStat)
     tool_use_coupling_rate: BaselineStat = field(default_factory=BaselineStat)
     leakage_events_per_session: BaselineStat = field(default_factory=BaselineStat)
+    reread_bursts_per_file: BaselineStat = field(default_factory=BaselineStat)
+    edit_churn_per_file: BaselineStat = field(default_factory=BaselineStat)
 
 
 @dataclass

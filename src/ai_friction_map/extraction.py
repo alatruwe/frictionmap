@@ -36,9 +36,10 @@ _GREP_LINE_RE = re.compile(r"^([^\s:][^\s]*?)[-:]\d+[-:]")
 
 # Skill/TaskOutput/TaskStop share Agent's "sub-delegation, files live
 # elsewhere" property; the others are genuinely non-file-touching.
+# TODO: document tracked / excluded tools in SIGNALS.md
 _SKIP_TOOLS = frozenset({
     "TodoWrite", "ExitPlanMode", "ToolSearch", "AskUserQuestion", "WebSearch",
-    "Skill", "TaskOutput", "TaskStop",
+    "WebFetch", "Skill", "TaskOutput", "TaskStop",
 })
 
 _logged_unknown_tools: set[str] = set()
@@ -165,7 +166,10 @@ def extract_file_paths(
     if tool_name in _SKIP_TOOLS:
         return []
 
+    # Anthropic ships new tools regularly; default to graceful skip (no
+    # path extraction, no stdout output). DEBUG keeps the diagnostic
+    # available without spamming users when an unknown tool appears.
     if tool_name not in _logged_unknown_tools:
         _logged_unknown_tools.add(tool_name)
-        logger.warning("unknown tool name in file-path extraction: %s", tool_name)
+        logger.debug("unknown tool name in file-path extraction: %s", tool_name)
     return []

@@ -105,15 +105,19 @@ def format_relative_time(mtime: float, now: float | None = None) -> str:
 def summarize_session(session_id: str, sessions_dir: Path) -> str:
     """Build a human-readable session summary for `session <id>` one-match.
 
-    Re-parses just the one session by symlinking/copying the file into a
-    temp dir and running parse_sessions over it. The placeholder "top
-    friction" heuristic ranks files by tool_usage.total + leakage.total +
-    excerpt_count; Phase 3 replaces with the real scoring function.
+    Re-parses just the one session by copying the file into a temp dir
+    and running parse_sessions over it. Uses the cached corpus baseline
+    (written by `scan`) so per-file scoring matches the HTML report's
+    z-scored ranking; falls back to absolute (raw × weight) scoring
+    when the cache is missing.
     """
     import tempfile
 
+    from ai_friction_map.baselines import load_baseline_cache
+    from ai_friction_map.events import BaselineSet
     from ai_friction_map.parser import parse_sessions
     from ai_friction_map.report import assemble_report
+    from ai_friction_map.scoring import score_corpus
 
     src_path = sessions_dir / f"{session_id}.jsonl"
     if not src_path.exists():
@@ -125,35 +129,71 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
         corpus = parse_sessions(td_path)
         report = assemble_report(corpus, sessions_dir_name=sessions_dir.name)
 
+    cached = load_baseline_cache()
+    warning = ""
+    if cached is None:
+        warning = (
+            "baseline cache absent — using absolute (raw × weight) scoring. "
+            "Run 'ai-friction-map scan' first to enable z-scored ranking "
+            "that matches the HTML report."
+        )
+        baseline = BaselineSet()  # mad=0 → z=0 → contribution = raw * 0 → effectively raw-anchored
+    else:
+        baseline = cached
+
+    # Re-score against the chosen baseline (corpus cache or empty fallback).
+    # Empty baseline yields z=0; we then rank by raw × weight as a fallback.
+    file_scores = score_corpus(corpus, baseline)
+    ranked: list[tuple[float, object, int]] = []
+    for f in report.files:
+        result = file_scores.get(f.path)
+        if cached is None:
+            # Fallback rank: sum(raw × weight) — bypasses z-score entirely.
+            score = 0.0
+            if result is not None:
+                for sv in (
+                    result.components.markers, result.components.block_length_words,
+                    result.components.question_rate_per_100w,
+                    result.components.tool_use_coupling, result.components.reread_bursts,
+                    result.components.edit_churn,
+                    result.components.reasoning_to_output_ratio,
+                    result.components.edit_failures,
+                    result.components.grep_reformulations,
+                    result.components.bash_retries, result.components.read_after_edit,
+                ):
+                    score += sv.raw * sv.weight
+            score = score / max(f.loc, 1)
+        else:
+            score = result.score_pre_normalization / max(f.loc, 1) if result else 0.0
+        tool_total = (
+            f.tool_usage.read + f.tool_usage.edit + f.tool_usage.write
+            + f.tool_usage.bash + f.tool_usage.grep + f.tool_usage.glob
+        )
+        ranked.append((score, f, tool_total))
+    ranked.sort(key=lambda r: r[0], reverse=True)
+
     title = _last_ai_title(src_path)
     events = corpus.sessions.get(session_id, [])
     turn_count = sum(1 for e in events if e.type == "user")
     files_touched = len(report.files)
     thinking_block_count = report.meta.thinking_block_count
 
-    ranked = []
-    for f in report.files:
-        tool_total = (
-            f.tool_usage.read + f.tool_usage.edit + f.tool_usage.write
-            + f.tool_usage.bash + f.tool_usage.grep + f.tool_usage.glob
-        )
-        rank = tool_total + f.leakage.total + len(f.excerpts)
-        ranked.append((rank, f, tool_total))
-    ranked.sort(key=lambda r: r[0], reverse=True)
-
     lines = [
         f"Session: {session_id[:8]} \"{title}\"",
         f"Turns: {turn_count} | Files touched: {files_touched} | "
         f"Thinking blocks: {thinking_block_count}",
-        "",
-        "Top friction this session:",
     ]
+    if warning:
+        lines.append(f"Warning: {warning}")
+    lines.append("")
+    lines.append("Top friction this session:")
     if not ranked:
         lines.append("  (no signals)")
     else:
-        for _rank, f, tool_total in ranked[:5]:
+        for score, f, tool_total in ranked[:5]:
             summary = (
-                f"{tool_total} tool uses, {f.leakage.total} leakage events, "
+                f"score {score:.3f} | {tool_total} tool uses, "
+                f"{f.leakage.total} leakage events, "
                 f"{len(f.excerpts)} marker excerpts"
             )
             lines.append(f"  {f.path}    {summary}")

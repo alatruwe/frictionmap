@@ -1,8 +1,8 @@
 """Split thinking blocks into marker clusters and emit per-cluster excerpts.
 
-Phase 2B uses a stub marker detector (case-insensitive substring match
-against a small lexicon). Phase 3 will replace `find_markers` with a
-real word-boundary regex; cluster detection itself won't change.
+Phase 3: word-boundary regex over a locked 13-marker lexicon, with markers
+inside fenced code blocks filtered out. Cluster detection itself is
+unchanged from Phase 2.
 """
 from __future__ import annotations
 
@@ -13,37 +13,58 @@ from ai_friction_map.events import Corpus, Highlight, ThinkingExcerpt
 CLUSTER_GAP_WORDS = 100
 EXCERPT_WORDS = 50
 
-_STUB_MARKERS = (
-    "wait",
-    "actually",
-    "hmm",
-    "let me",
-    "on second thought",
-    "reconsidering",
-    "i was wrong",
+# Empirically calibrated against the attune corpus (April 2026, 30-block
+# hand-tagged sample). "but" and "let me check" were dropped — both were
+# dominated by forward-planning false positives, not re-evaluation. "let
+# me think" and "however" were missing markers caught during the same
+# pass.
+_LEXICON = (
+    "actually", "wait", "hmm", "no,",
+    "let me reconsider", "on second thought", "scratch that",
+    "hold on", "reconsidering", "i was wrong", "let me think",
+    "now I'm realizing", "however",
 )
 
+# Longest-first so "let me reconsider" wins over "let me check" at the
+# same offset; \b applies at outer boundaries only (the comma in "no,"
+# and the apostrophe in "now I'm realizing" are matched literally).
+_MARKER_RE = re.compile(
+    r"\b(?:" + "|".join(re.escape(m) for m in sorted(_LEXICON, key=len, reverse=True)) + r")",
+    re.IGNORECASE,
+)
+
+_FENCE_RE = re.compile(r"^```[\s\S]*?^```", re.MULTILINE)
 _WORD_RE = re.compile(r"\S+")
 
 
-def find_markers(text: str) -> list[tuple[int, int, str]]:
-    """Return (char_start, char_end, matched_text) per marker occurrence.
+def _fenced_regions(text: str) -> list[tuple[int, int]]:
+    return [(m.start(), m.end()) for m in _FENCE_RE.finditer(text)]
 
-    Stub: case-insensitive substring match. Known false-positive sources
-    (e.g. "let me" inside "delete me") are accepted for 2B — Phase 3's
-    word-boundary regex replaces this implementation without changing
-    cluster-detection code.
+
+def _in_any_region(pos: int, regions: list[tuple[int, int]]) -> bool:
+    for start, end in regions:
+        if start <= pos < end:
+            return True
+    return False
+
+
+def strip_code_fences(text: str) -> str:
+    """Remove ``` fenced blocks. Used for per-100-words denominators."""
+    return _FENCE_RE.sub("", text)
+
+
+def find_markers(text: str) -> list[tuple[int, int, str]]:
+    """Return (char_start, char_end, matched_text) per marker occurrence
+    in original-text coordinates. Hits inside fenced code blocks are
+    filtered out — downstream `_excerpts_for_block` consumes the same
+    coordinate space, so no offset translation is needed.
     """
+    regions = _fenced_regions(text)
     out: list[tuple[int, int, str]] = []
-    lowered = text.lower()
-    for marker in _STUB_MARKERS:
-        start = 0
-        while True:
-            idx = lowered.find(marker, start)
-            if idx == -1:
-                break
-            out.append((idx, idx + len(marker), text[idx:idx + len(marker)]))
-            start = idx + len(marker)
+    for m in _MARKER_RE.finditer(text):
+        if _in_any_region(m.start(), regions):
+            continue
+        out.append((m.start(), m.end(), m.group(0)))
     out.sort(key=lambda x: x[0])
     return out
 
