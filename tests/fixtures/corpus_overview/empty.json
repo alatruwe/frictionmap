@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "name": "attune",
+    "session_count": 12,
+    "file_count": 45,
+    "thinking_block_count": 95,
+    "total_event_count": 1400,
+    "generated_at": "2026-04-27T14:00:00Z",
+    "schema_version": "1.2"
+  },
+  "baselines": {
+    "corpus": {
+      "block_length_words": {"median": 118, "mad": 36, "n": 487, "low_confidence": false},
+      "question_rate_per_100w": {"median": 0.7, "mad": 0.4, "n": 487, "low_confidence": false},
+      "markers_per_100w": {"median": 1.2, "mad": 0.9, "n": 487, "low_confidence": false},
+      "reasoning_to_output_ratio": {"median": 2.4, "mad": 1.1, "n": 487, "low_confidence": false},
+      "tool_use_coupling_rate": {"median": 0.62, "mad": 0.18, "n": 487, "low_confidence": false},
+      "leakage_events_per_session": {"median": 2.1, "mad": 1.4, "n": 65, "low_confidence": false}
+    }
+  },
+  "session_baselines": {},
+  "files": [
+    {
+      "path": "src/main.rs",
+      "name": "main.rs",
+      "directory": "src/",
+      "score": 0.04,
+      "tangle_count": 1,
+      "session_count": 1,
+      "loc": 120,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00033,
+        "normalized_by_complexity": 0.0027,
+        "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 120, "loc_no_blanks_comments": 90, "char_count": 4560,
+        "function_count": 5, "class_count": 1,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 15},
+        "halstead_volume": 504
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib.rs",
+      "name": "lib.rs",
+      "directory": "src/",
+      "score": 0.02,
+      "tangle_count": 1,
+      "session_count": 1,
+      "loc": 80,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00025,
+        "normalized_by_complexity": 0.002,
+        "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 80, "loc_no_blanks_comments": 60, "char_count": 3040,
+        "function_count": 3, "class_count": 1,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 10},
+        "halstead_volume": 336
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    }
+  ],
+  "session_titles": {}
+}

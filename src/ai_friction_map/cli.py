@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
-from dataclasses import asdict
-from importlib.resources import files
 from pathlib import Path
 
 from ai_friction_map import __version__
 from ai_friction_map.baselines import save_baseline_cache
 from ai_friction_map.parser import parse_sessions
+from ai_friction_map.render import load_template_assets, render_report
 from ai_friction_map.report import assemble_report
 from ai_friction_map.sessions import (
     find_active_sessions,
@@ -67,13 +65,13 @@ def _cmd_scan(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
     reset_boundary_clip_count()
     corpus = parse_sessions(sessions_dir)
-    report = assemble_report(corpus, sessions_dir_name=sessions_dir.name)
-    template = (
-        files("ai_friction_map")
-        .joinpath("templates/report.html.template")
-        .read_text(encoding="utf-8")
+    report = assemble_report(
+        corpus,
+        sessions_dir_name=sessions_dir.name,
+        sessions_dir=sessions_dir,
     )
-    rendered = template.replace("{{DATA}}", json.dumps(asdict(report), indent=2))
+    template, app_jsx, styles_css = load_template_assets()
+    rendered = render_report(report, template, app_jsx, styles_css)
     Path("report.html").write_text(rendered, encoding="utf-8")
     save_baseline_cache(report.baselines.corpus)
     print(

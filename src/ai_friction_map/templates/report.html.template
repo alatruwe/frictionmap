@@ -1,38 +1,25 @@
-<!-- Debug view for Phase 2C. Phase 4 replaces this with the real UI. -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ai-friction-map — Debug Report</title>
-  <style>
-    body { font-family: -apple-system, system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h1 { font-weight: 500; margin-bottom: 0.25rem; }
-    .stats { font-variant-numeric: tabular-nums; color: #555; margin: 0 0 0.5rem; }
-    .meta { font-size: 0.85rem; color: #777; }
-    details { margin-top: 1.5rem; }
-    summary { cursor: pointer; font-weight: 500; }
-    pre { background: #f6f6f6; border: 1px solid #ddd; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.78rem; line-height: 1.4; max-height: 80vh; }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Friction Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>{{STYLES_CSS}}</style>
 </head>
 <body>
-  <h1>ai-friction-map — Debug Report</h1>
-  <p class="stats" id="stats"></p>
-  <p class="meta" id="meta"></p>
-  <details open>
-    <summary>Report JSON</summary>
-    <pre id="json"></pre>
-  </details>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
   <script>
-    const DATA = {{DATA}};
-    const meta = DATA.meta || {};
-    document.getElementById('stats').textContent =
-      `${(meta.name || '?')} — ${(meta.session_count || 0).toLocaleString()} sessions, `
-      + `${(meta.file_count || 0).toLocaleString()} files with friction signals, `
-      + `${(meta.total_event_count || 0).toLocaleString()} events, `
-      + `${(meta.thinking_block_count || 0).toLocaleString()} thinking blocks.`;
-    document.getElementById('meta').textContent =
-      `Schema ${meta.schema_version || '?'} · generated ${meta.generated_at || '?'}`;
-    document.getElementById('json').textContent = JSON.stringify(DATA, null, 2);
+    window.FRICTION_DATA = {{DATA}};
+    window.SESSION_TITLES = {{SESSION_TITLES}};
   </script>
+  <script type="text/babel">{{APP_JSX}}</script>
 </body>
 </html>

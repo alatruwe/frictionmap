@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import json
+
 from ai_friction_map.parser import parse_sessions
 from ai_friction_map.report import _extract_codebase_name, assemble_report
 from tests._factories import assistant, jsonl, progress, user
@@ -10,6 +12,16 @@ from tests._factories import assistant, jsonl, progress, user
 def _scan(tmp_path: Path) -> tuple:
     corpus = parse_sessions(tmp_path)
     report = assemble_report(corpus, sessions_dir_name="-Users-x-Projects-attune")
+    return corpus, report
+
+
+def _scan_with_dir(tmp_path: Path) -> tuple:
+    corpus = parse_sessions(tmp_path)
+    report = assemble_report(
+        corpus,
+        sessions_dir_name="-Users-x-Projects-attune",
+        sessions_dir=tmp_path,
+    )
     return corpus, report
 
 
@@ -306,6 +318,64 @@ def test_model_distribution_counts_events_and_sessions(tmp_path: Path) -> None:
     assert md.events_by_model == {"model_A": 3, "model_B": 1}
     assert md.sessions_by_model == {"model_A": 2, "model_B": 1}
     assert md.unknown_model_event_count == 0
+
+
+def test_session_titles_populated_from_ai_title_events(tmp_path: Path) -> None:
+    """When sessions_dir is provided, session_titles maps the 8-char
+    session-id prefix to the most recent aiTitle event in each JSONL.
+    Sessions without an aiTitle are omitted (UI guards with `&&`)."""
+    sid_a = "aaaa1111-bbbb-cccc-dddd-eeeeeeeeeeee"
+    sid_b = "bbbb2222-cccc-dddd-eeee-ffffffffffff"
+    sid_c = "cccc3333-dddd-eeee-ffff-000000000000"
+    edit_a = assistant(sid_a, "u1", [
+        {"type": "tool_use", "id": "t1", "name": "Edit",
+         "input": {"file_path": "/proj/a.py",
+                   "old_string": "a", "new_string": "b"}},
+    ])
+    edit_b = assistant(sid_b, "u1", [
+        {"type": "tool_use", "id": "t1", "name": "Edit",
+         "input": {"file_path": "/proj/b.py",
+                   "old_string": "a", "new_string": "b"}},
+    ])
+    edit_c = assistant(sid_c, "u1", [
+        {"type": "tool_use", "id": "t1", "name": "Edit",
+         "input": {"file_path": "/proj/c.py",
+                   "old_string": "a", "new_string": "b"}},
+    ])
+    title_a = {"type": "ai-title", "sessionId": sid_a, "aiTitle": "First title"}
+    title_b_old = {"type": "ai-title", "sessionId": sid_b, "aiTitle": "Old title"}
+    title_b_new = {"type": "ai-title", "sessionId": sid_b, "aiTitle": "New title"}
+    (tmp_path / f"{sid_a}.jsonl").write_text(
+        json.dumps(edit_a) + "\n" + json.dumps(title_a) + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / f"{sid_b}.jsonl").write_text(
+        json.dumps(edit_b) + "\n"
+        + json.dumps(title_b_old) + "\n"
+        + json.dumps(title_b_new) + "\n",
+        encoding="utf-8",
+    )
+    jsonl(tmp_path / f"{sid_c}.jsonl", [edit_c])
+
+    _, report = _scan_with_dir(tmp_path)
+    assert isinstance(report.session_titles, dict)
+    assert report.session_titles[sid_a[:8]] == "First title"
+    assert report.session_titles[sid_b[:8]] == "New title"  # last wins
+    assert sid_c[:8] not in report.session_titles  # no title → omitted
+    for key in report.session_titles:
+        assert len(key) == 8
+
+
+def test_session_titles_empty_when_sessions_dir_omitted(tmp_path: Path) -> None:
+    jsonl(tmp_path / "s.jsonl", [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/a.py",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ])
+    _, report = _scan(tmp_path)
+    assert report.session_titles == {}
 
 
 def test_model_distribution_unknown_bucket_counts_only_assistant_like(tmp_path: Path) -> None:

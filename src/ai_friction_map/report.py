@@ -30,12 +30,20 @@ from ai_friction_map.events import (
 from ai_friction_map.scoring import compute_block_signals, score_corpus
 
 
-def assemble_report(corpus: Corpus, sessions_dir_name: str = "") -> Report:
+def assemble_report(
+    corpus: Corpus,
+    sessions_dir_name: str = "",
+    sessions_dir: Path | None = None,
+) -> Report:
     """Build a Report from a fully-parsed Corpus.
 
     `sessions_dir_name` is the basename of the sessions directory
     (e.g. `-Users-adelinelatruwe-Projects-attune`); used to derive
     `meta.name`. Pass `""` if unknown.
+
+    `sessions_dir`, when provided, is iterated to populate
+    `Report.session_titles` (mapping session_id_short → most-recent
+    aiTitle). Sessions without an extractable title are omitted.
     """
     expanded_excerpts_per_session = _expand_excerpts(corpus)
     interesting_files = _interesting_files(corpus, expanded_excerpts_per_session)
@@ -116,7 +124,20 @@ def assemble_report(corpus: Corpus, sessions_dir_name: str = "") -> Report:
         baselines=Baselines(corpus=corpus_baseline),
         session_baselines=session_baselines,
         files=files,
+        session_titles=_build_session_titles(sessions_dir),
     )
+
+
+def _build_session_titles(sessions_dir: Path | None) -> dict[str, str]:
+    if sessions_dir is None:
+        return {}
+    from ai_friction_map.sessions import _last_ai_title
+    titles: dict[str, str] = {}
+    for path in sessions_dir.glob("*.jsonl"):
+        title = _last_ai_title(path)
+        if title and title != "(untitled)":
+            titles[path.stem[:8]] = title
+    return titles
 
 
 def _expand_excerpts(corpus: Corpus) -> dict[str, list[ThinkingExcerpt]]:

@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "name": "attune",
+    "session_count": 18,
+    "file_count": 200,
+    "thinking_block_count": 142,
+    "total_event_count": 2100,
+    "generated_at": "2026-04-27T14:00:00Z",
+    "schema_version": "1.2"
+  },
+  "baselines": {
+    "corpus": {
+      "block_length_words": {"median": 118, "mad": 36, "n": 487, "low_confidence": false},
+      "question_rate_per_100w": {"median": 0.7, "mad": 0.4, "n": 487, "low_confidence": false},
+      "markers_per_100w": {"median": 1.2, "mad": 0.9, "n": 487, "low_confidence": false},
+      "reasoning_to_output_ratio": {"median": 2.4, "mad": 1.1, "n": 487, "low_confidence": false},
+      "tool_use_coupling_rate": {"median": 0.62, "mad": 0.18, "n": 487, "low_confidence": false},
+      "leakage_events_per_session": {"median": 2.1, "mad": 1.4, "n": 65, "low_confidence": false}
+    }
+  },
+  "session_baselines": {},
+  "files": [
+    {
+      "path": "src/lib/parser.go", "name": "parser.go", "directory": "src/lib/",
+      "score": 0.28, "tangle_count": 4, "session_count": 2, "loc": 320,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00088, "normalized_by_complexity": 0.007, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 320, "loc_no_blanks_comments": 240, "char_count": 12160,
+        "function_count": 14, "class_count": 4,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 40}, "halstead_volume": 1344
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 4, "edit": 2, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": [
+        {
+          "session_id": "00000001-aaaa-bbbb-cccc-000000000000",
+          "session_id_short": "00000001",
+          "block_index": 7, "block_total": 22, "block_length_words": 240,
+          "cluster_index": 0, "cluster_count": 1,
+          "text": "I expected the lexer to consume the bracket here. Wait — actually, the grammar handles it as a postfix. OK.",
+          "highlights": [
+            {"start": 50, "end": 54, "marker": "wait"},
+            {"start": 57, "end": 65, "marker": "actually"}
+          ],
+          "attribution": {
+            "tier": "exact_path", "confidence": "high",
+            "file_paths": ["src/lib/parser.go"],
+            "proximity_distance": null, "proximity_direction": null
+          },
+          "block_signals": {
+            "length_words": 240, "length_chars": 1480, "question_rate_per_100w": 1.2,
+            "marker_count": 2, "markers_per_100w": 1.6, "tool_use_coupling": true
+          },
+          "agent_sourced": false
+        }
+      ]
+    },
+    {
+      "path": "src/lib/lexer.go", "name": "lexer.go", "directory": "src/lib/",
+      "score": 0.21, "tangle_count": 3, "session_count": 2, "loc": 250,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00084, "normalized_by_complexity": 0.0068, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 250, "loc_no_blanks_comments": 187, "char_count": 9500,
+        "function_count": 11, "class_count": 3,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 31}, "halstead_volume": 1050
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 3, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "cmd/run/main.go", "name": "main.go", "directory": "cmd/run/",
+      "score": 0.16, "tangle_count": 2, "session_count": 1, "loc": 95,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00168, "normalized_by_complexity": 0.0145, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 95, "loc_no_blanks_comments": 71, "char_count": 3610,
+        "function_count": 4, "class_count": 1,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 11}, "halstead_volume": 399
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 2, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/eval.go", "name": "eval.go", "directory": "src/lib/",
+      "score": 0.12, "tangle_count": 2, "session_count": 1, "loc": 410,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00029, "normalized_by_complexity": 0.0024, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 410, "loc_no_blanks_comments": 307, "char_count": 15580,
+        "function_count": 18, "class_count": 5,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 51}, "halstead_volume": 1722
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 2, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/types.go", "name": "types.go", "directory": "src/lib/",
+      "score": 0.08, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00044, "normalized_by_complexity": 0.0036, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/errors.go", "name": "errors.go", "directory": "src/lib/",
+      "score": 0.072, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.0004, "normalized_by_complexity": 0.0033, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/stdlib.go", "name": "stdlib.go", "directory": "src/lib/",
+      "score": 0.064, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00036, "normalized_by_complexity": 0.0029, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/intrinsics.go", "name": "intrinsics.go", "directory": "src/lib/",
+      "score": 0.056, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00031, "normalized_by_complexity": 0.0025, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/fmt.go", "name": "fmt.go", "directory": "src/lib/",
+      "score": 0.048, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00027, "normalized_by_complexity": 0.0022, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/stringutil.go", "name": "stringutil.go", "directory": "src/lib/",
+      "score": 0.04, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00022, "normalized_by_complexity": 0.0018, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/io.go", "name": "io.go", "directory": "src/lib/",
+      "score": 0.032, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00018, "normalized_by_complexity": 0.0015, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/lib/test_helpers.go", "name": "test_helpers.go", "directory": "src/lib/",
+      "score": 0.024, "tangle_count": 1, "session_count": 1, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00013, "normalized_by_complexity": 0.0011, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    }
+  ],
+  "session_titles": {
+    "00000001": "Working on parser.go"
+  }
+}

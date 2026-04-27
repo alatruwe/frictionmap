@@ -1,0 +1,490 @@
+{
+  "meta": {
+    "name": "attune",
+    "session_count": 65,
+    "file_count": 15,
+    "thinking_block_count": 607,
+    "total_event_count": 9151,
+    "generated_at": "2026-04-27T14:00:00Z",
+    "schema_version": "1.2"
+  },
+  "baselines": {
+    "corpus": {
+      "block_length_words": {"median": 118, "mad": 36, "n": 487, "low_confidence": false},
+      "question_rate_per_100w": {"median": 0.7, "mad": 0.4, "n": 487, "low_confidence": false},
+      "markers_per_100w": {"median": 1.2, "mad": 0.9, "n": 487, "low_confidence": false},
+      "reasoning_to_output_ratio": {"median": 2.4, "mad": 1.1, "n": 487, "low_confidence": false},
+      "tool_use_coupling_rate": {"median": 0.62, "mad": 0.18, "n": 487, "low_confidence": false},
+      "leakage_events_per_session": {"median": 2.1, "mad": 1.4, "n": 65, "low_confidence": false}
+    }
+  },
+  "session_baselines": {},
+  "files": [
+    {
+      "path": "findings.md", "name": "findings.md", "directory": "/",
+      "score": 0.97, "tangle_count": 3, "session_count": 2, "loc": 0,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 4.8, "z_score": 2.7, "weight": 0.32, "contribution": 1.536},
+        "block_length_words": {"raw": 380, "z_score": 4.91, "weight": 0.1, "contribution": 38},
+        "question_rate_per_100w": {"raw": 1.4, "z_score": 1.18, "weight": 0.12, "contribution": 0.168},
+        "tool_use_coupling": {"raw": 0.2, "z_score": -1.57, "weight": 0.14, "contribution": 0.028},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.97, "normalized_by_complexity": null, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 0, "loc_no_blanks_comments": 0, "char_count": 0,
+        "function_count": 1, "class_count": 0,
+        "cyclomatic": null, "halstead_volume": null
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 3, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": [
+        {
+          "session_id": "00000001-aaaa-bbbb-cccc-000000000000",
+          "session_id_short": "00000001",
+          "block_index": 7, "block_total": 22, "block_length_words": 240,
+          "cluster_index": 0, "cluster_count": 1,
+          "text": "Wait — this finding contradicts what I noted earlier. Let me reread the previous entry. Actually no, the two are about different functions, so both can stand.",
+          "highlights": [
+            {"start": 0, "end": 4, "marker": "wait"},
+            {"start": 54, "end": 60, "marker": "let me"},
+            {"start": 88, "end": 96, "marker": "actually"}
+          ],
+          "attribution": {
+            "tier": "exact_path", "confidence": "high",
+            "file_paths": ["findings.md"],
+            "proximity_distance": null, "proximity_direction": null
+          },
+          "block_signals": {
+            "length_words": 240, "length_chars": 1480, "question_rate_per_100w": 1.2,
+            "marker_count": 3, "markers_per_100w": 1.6, "tool_use_coupling": true
+          },
+          "agent_sourced": false
+        },
+        {
+          "session_id": "00000002-aaaa-bbbb-cccc-000000000000",
+          "session_id_short": "00000002",
+          "block_index": 7, "block_total": 22, "block_length_words": 240,
+          "cluster_index": 0, "cluster_count": 1,
+          "text": "I'm not sure if this counts as a finding or just an observation. Hmm. Let me check the rubric again.",
+          "highlights": [
+            {"start": 4, "end": 12, "marker": "not sure"},
+            {"start": 65, "end": 68, "marker": "hmm"},
+            {"start": 70, "end": 82, "marker": "let me check"}
+          ],
+          "attribution": {
+            "tier": "exact_path", "confidence": "high",
+            "file_paths": ["findings.md"],
+            "proximity_distance": null, "proximity_direction": null
+          },
+          "block_signals": {
+            "length_words": 240, "length_chars": 1480, "question_rate_per_100w": 1.2,
+            "marker_count": 3, "markers_per_100w": 1.6, "tool_use_coupling": true
+          },
+          "agent_sourced": false
+        }
+      ]
+    },
+    {
+      "path": "investigate.py", "name": "investigate.py", "directory": "/",
+      "score": 0.94, "tangle_count": 2, "session_count": 2, "loc": 0,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 4.5, "z_score": 2.47, "weight": 0.32, "contribution": 1.44},
+        "block_length_words": {"raw": 320, "z_score": 3.78, "weight": 0.1, "contribution": 32},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.94, "normalized_by_complexity": null, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 0, "loc_no_blanks_comments": 0, "char_count": 0,
+        "function_count": 1, "class_count": 0,
+        "cyclomatic": null, "halstead_volume": null
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 2, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": [
+        {
+          "session_id": "00000003-aaaa-bbbb-cccc-000000000000",
+          "session_id_short": "00000003",
+          "block_index": 7, "block_total": 22, "block_length_words": 240,
+          "cluster_index": 0, "cluster_count": 1,
+          "text": "Hmm, the investigate.py is supposed to call into the parser but I don't remember if I wired it. Wait — let me check.",
+          "highlights": [
+            {"start": 0, "end": 3, "marker": "hmm"},
+            {"start": 96, "end": 100, "marker": "wait"},
+            {"start": 103, "end": 115, "marker": "let me check"}
+          ],
+          "attribution": {
+            "tier": "exact_path", "confidence": "high",
+            "file_paths": ["investigate.py"],
+            "proximity_distance": null, "proximity_direction": null
+          },
+          "block_signals": {
+            "length_words": 240, "length_chars": 1480, "question_rate_per_100w": 1.2,
+            "marker_count": 3, "markers_per_100w": 1.6, "tool_use_coupling": true
+          },
+          "agent_sourced": false
+        }
+      ]
+    },
+    {
+      "path": "src/attune/storage.py", "name": "storage.py", "directory": "src/attune/",
+      "score": 0.41, "tangle_count": 9, "session_count": 4, "loc": 380,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 2.1, "z_score": 0.67, "weight": 0.32, "contribution": 0.672},
+        "block_length_words": {"raw": 220, "z_score": 1.91, "weight": 0.1, "contribution": 22},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00108, "normalized_by_complexity": 0.0087, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 380, "loc_no_blanks_comments": 285, "char_count": 14440,
+        "function_count": 17, "class_count": 4,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 47}, "halstead_volume": 1596
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 9, "edit": 4, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": [
+        {
+          "session_id": "00000004-aaaa-bbbb-cccc-000000000000",
+          "session_id_short": "00000004",
+          "block_index": 7, "block_total": 22, "block_length_words": 240,
+          "cluster_index": 0, "cluster_count": 1,
+          "text": "So the migration runs before the schema check. Wait, that can't be right — storage.py calls ensure_schema() inside __init__. Actually, let me check the import order again.",
+          "highlights": [
+            {"start": 47, "end": 51, "marker": "wait"},
+            {"start": 125, "end": 133, "marker": "actually"},
+            {"start": 135, "end": 147, "marker": "let me check"}
+          ],
+          "attribution": {
+            "tier": "exact_path", "confidence": "high",
+            "file_paths": ["src/attune/storage.py"],
+            "proximity_distance": null, "proximity_direction": null
+          },
+          "block_signals": {
+            "length_words": 240, "length_chars": 1480, "question_rate_per_100w": 1.2,
+            "marker_count": 3, "markers_per_100w": 1.6, "tool_use_coupling": true
+          },
+          "agent_sourced": false
+        }
+      ]
+    },
+    {
+      "path": "src/attune/sessions.py", "name": "sessions.py", "directory": "src/attune/",
+      "score": 0.38, "tangle_count": 8, "session_count": 5, "loc": 420,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.9, "z_score": 0.52, "weight": 0.32, "contribution": 0.608},
+        "block_length_words": {"raw": 195, "z_score": 1.44, "weight": 0.1, "contribution": 19.5},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.0009, "normalized_by_complexity": 0.0073, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 420, "loc_no_blanks_comments": 315, "char_count": 15960,
+        "function_count": 19, "class_count": 5,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 52}, "halstead_volume": 1764
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 8, "edit": 4, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": [
+        {
+          "session_id": "00000005-aaaa-bbbb-cccc-000000000000",
+          "session_id_short": "00000005",
+          "block_index": 7, "block_total": 22, "block_length_words": 240,
+          "cluster_index": 0, "cluster_count": 1,
+          "text": "I'm realizing the session iterator is consuming the file twice. Wait — no, it's the JSONL parser opening it again. Let me trace.",
+          "highlights": [
+            {"start": 0, "end": 13, "marker": "i'm realizing"},
+            {"start": 64, "end": 68, "marker": "wait"},
+            {"start": 115, "end": 127, "marker": "let me trace"}
+          ],
+          "attribution": {
+            "tier": "exact_path", "confidence": "high",
+            "file_paths": ["src/attune/sessions.py"],
+            "proximity_distance": null, "proximity_direction": null
+          },
+          "block_signals": {
+            "length_words": 240, "length_chars": 1480, "question_rate_per_100w": 1.2,
+            "marker_count": 3, "markers_per_100w": 1.6, "tool_use_coupling": true
+          },
+          "agent_sourced": false
+        }
+      ]
+    },
+    {
+      "path": "src/attune/parser.py", "name": "parser.py", "directory": "src/attune/",
+      "score": 0.34, "tangle_count": 7, "session_count": 4, "loc": 510,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00067, "normalized_by_complexity": 0.0054, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 510, "loc_no_blanks_comments": 382, "char_count": 19380,
+        "function_count": 23, "class_count": 6,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 63}, "halstead_volume": 2142
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 7, "edit": 3, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/scoring.py", "name": "scoring.py", "directory": "src/attune/",
+      "score": 0.31, "tangle_count": 6, "session_count": 3, "loc": 290,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00107, "normalized_by_complexity": 0.0086, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 290, "loc_no_blanks_comments": 217, "char_count": 11020,
+        "function_count": 13, "class_count": 3,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 36}, "halstead_volume": 1218
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 6, "edit": 3, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/baselines.py", "name": "baselines.py", "directory": "src/attune/",
+      "score": 0.28, "tangle_count": 5, "session_count": 3, "loc": 180,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00156, "normalized_by_complexity": 0.0127, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 180, "loc_no_blanks_comments": 135, "char_count": 6840,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 22}, "halstead_volume": 756
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 5, "edit": 2, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/cli.py", "name": "cli.py", "directory": "src/attune/",
+      "score": 0.26, "tangle_count": 5, "session_count": 4, "loc": 220,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00118, "normalized_by_complexity": 0.0096, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 220, "loc_no_blanks_comments": 165, "char_count": 8360,
+        "function_count": 10, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 27}, "halstead_volume": 924
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 5, "edit": 2, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/templates/report.html.template", "name": "report.html.template", "directory": "src/attune/templates/",
+      "score": 0.24, "tangle_count": 4, "session_count": 3, "loc": 340,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00071, "normalized_by_complexity": 0.0057, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 340, "loc_no_blanks_comments": 255, "char_count": 12920,
+        "function_count": 15, "class_count": 4,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 42}, "halstead_volume": 1428
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 4, "edit": 2, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/extract.py", "name": "extract.py", "directory": "src/attune/",
+      "score": 0.22, "tangle_count": 4, "session_count": 2, "loc": 260,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00085, "normalized_by_complexity": 0.0069, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 260, "loc_no_blanks_comments": 195, "char_count": 9880,
+        "function_count": 11, "class_count": 3,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 32}, "halstead_volume": 1092
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 4, "edit": 2, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/leakage.py", "name": "leakage.py", "directory": "src/attune/",
+      "score": 0.2, "tangle_count": 3, "session_count": 2, "loc": 145,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00138, "normalized_by_complexity": 0.0111, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 145, "loc_no_blanks_comments": 108, "char_count": 5510,
+        "function_count": 6, "class_count": 1,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 18}, "halstead_volume": 609
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 3, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "tests/test_scan.py", "name": "test_scan.py", "directory": "tests/",
+      "score": 0.18, "tangle_count": 3, "session_count": 2, "loc": 240,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00075, "normalized_by_complexity": 0.006, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 240, "loc_no_blanks_comments": 180, "char_count": 9120,
+        "function_count": 10, "class_count": 3,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 30}, "halstead_volume": 1008
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 3, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "tests/test_attribution.py", "name": "test_attribution.py", "directory": "tests/",
+      "score": 0.16, "tangle_count": 2, "session_count": 2, "loc": 195,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00082, "normalized_by_complexity": 0.0067, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 195, "loc_no_blanks_comments": 146, "char_count": 7410,
+        "function_count": 8, "class_count": 2,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 24}, "halstead_volume": 819
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 2, "edit": 1, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/utils.py", "name": "utils.py", "directory": "src/attune/",
+      "score": 0.09, "tangle_count": 1, "session_count": 1, "loc": 90,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.001, "normalized_by_complexity": 0.0082, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 90, "loc_no_blanks_comments": 67, "char_count": 3420,
+        "function_count": 4, "class_count": 1,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 11}, "halstead_volume": 378
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    },
+    {
+      "path": "src/attune/walker.py", "name": "walker.py", "directory": "src/attune/",
+      "score": 0.08, "tangle_count": 1, "session_count": 1, "loc": 130,
+      "thinking_resolution_rate": 0.55,
+      "score_components": {
+        "markers": {"raw": 1.5, "z_score": 0.22, "weight": 0.32, "contribution": 0.48},
+        "block_length_words": {"raw": 140, "z_score": 0.41, "weight": 0.1, "contribution": 14},
+        "question_rate_per_100w": {"raw": 0.8, "z_score": 0.17, "weight": 0.12, "contribution": 0.096},
+        "tool_use_coupling": {"raw": 0.6, "z_score": -0.07, "weight": 0.14, "contribution": 0.084},
+        "reread_bursts": {"raw": 0.4, "z_score": 0.34, "weight": 0.1, "contribution": 0.04},
+        "edit_churn": {"raw": 0.5, "z_score": 0.22, "weight": 0.1, "contribution": 0.05},
+        "reasoning_to_output_ratio": {"raw": 2.5, "z_score": 0.06, "weight": 0.12, "contribution": 0.3},
+        "normalized_by_loc": 0.00062, "normalized_by_complexity": 0.005, "multi_file_weight": 1
+      },
+      "complexity": {
+        "loc": 130, "loc_no_blanks_comments": 97, "char_count": 4940,
+        "function_count": 5, "class_count": 1,
+        "cyclomatic": {"max": 6, "mean": 2.4, "sum": 16}, "halstead_volume": 546
+      },
+      "leakage": {"edit_failures": 1, "grep_reformulations": 0, "bash_retries": 0, "read_after_edit": 1, "total": 2},
+      "tool_usage": {"read": 1, "edit": 0, "write": 0, "bash": 0, "grep": 0, "glob": 0},
+      "excerpts": []
+    }
+  ],
+  "session_titles": {
+    "00000001": "Working on findings.md",
+    "00000002": "Working on findings.md",
+    "00000003": "Working on investigate.py",
+    "00000004": "Working on storage.py",
+    "00000005": "Working on sessions.py"
+  }
+}

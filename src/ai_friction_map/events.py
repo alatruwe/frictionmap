@@ -248,3 +248,4 @@ class Report:
     baselines: Baselines = field(default_factory=Baselines)
     session_baselines: dict[str, BaselineSet] = field(default_factory=dict)
     files: list[FileFriction] = field(default_factory=list)
+    session_titles: dict[str, str] = field(default_factory=dict)
