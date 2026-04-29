@@ -306,3 +306,144 @@ def test_reasoning_to_output_ratio_parked_at_zero_weight():
     assert result.components.reasoning_to_output_ratio.contribution == 0.0
     # No other signals → score_pre is exactly zero.
     assert result.score_pre_normalization == 0.0
+
+
+# ---------------------------------------------------------------------
+# Schema 1.3: file-level marker scoring uses presence × intensity.
+# ---------------------------------------------------------------------
+
+
+def _mk_corpus_for_scoring(events: list[ParsedEvent]) -> Corpus:
+    c = Corpus()
+    c.sessions["s1"] = events
+    return c
+
+
+def _attr(*paths: str) -> Attribution:
+    return Attribution(
+        tier="exact_path", confidence="high", file_paths=list(paths),
+    )
+
+
+def test_marker_contribution_zero_when_no_attributed_blocks():
+    from ai_friction_map.events import BaselineSet, LeakageCounts
+    from ai_friction_map.scoring import WEIGHTS, _BlockAgg, score_file
+
+    result = score_file(
+        path="/proj/x.py",
+        block_agg=_BlockAgg(),
+        reread_count=0,
+        edit_churn_count=0,
+        reasoning_to_output=0.0,
+        leakage=LeakageCounts(),
+        baseline=BaselineSet(),
+    )
+    assert result.components.markers.raw == 0.0
+    assert result.components.markers.contribution == 0.0
+    # Weight is still emitted so downstream introspection sees the signal.
+    assert result.components.markers.weight == WEIGHTS["markers"]
+
+
+def test_marker_contribution_zero_when_no_positive_blocks():
+    from ai_friction_map.events import BaselineSet
+    from ai_friction_map.scoring import _aggregate_block_signals, score_corpus
+
+    # Three thinking blocks attributed to /proj/x.py, none containing
+    # any marker → presence_rate = 0 → contribution = 0.
+    blocks = [
+        _mk_event(
+            [Block(type="thinking", thinking="ordinary text", attribution=_attr("/proj/x.py"))],
+            event_index=i,
+        )
+        for i in range(3)
+    ]
+    corpus = _mk_corpus_for_scoring(blocks)
+    aggs = _aggregate_block_signals(corpus)
+    agg = aggs["/proj/x.py"]
+    assert agg.dilution_weight_sum == 3.0
+    assert agg.positive_block_weight_sum == 0.0
+    results = score_corpus(corpus, BaselineSet())
+    assert results["/proj/x.py"].components.markers.raw == 0.0
+    assert results["/proj/x.py"].components.markers.contribution == 0.0
+
+
+def test_marker_contribution_when_every_attributed_block_has_markers():
+    """Presence rate = 1.0; raw equals mean intensity over positive blocks."""
+    from ai_friction_map.events import BaselineSet
+    from ai_friction_map.scoring import WEIGHTS, score_corpus
+
+    # Each block is "wait" (1 marker, 1 word) → markers_per_100w = 100.
+    events = [
+        _mk_event(
+            [Block(type="thinking", thinking="wait", attribution=_attr("/proj/x.py"))],
+            event_index=i,
+        )
+        for i in range(3)
+    ]
+    corpus = _mk_corpus_for_scoring(events)
+    results = score_corpus(corpus, BaselineSet())
+    sig = results["/proj/x.py"].components.markers
+    # presence_rate = 1.0, mean_intensity = 100.0 → raw = 100.0.
+    assert abs(sig.raw - 100.0) < 1e-9
+    assert abs(sig.contribution - 100.0 * WEIGHTS["markers"]) < 1e-9
+    # z_score is unused on the presence/intensity path.
+    assert sig.z_score == 0.0
+
+
+def test_marker_contribution_partial_presence():
+    """4 blocks attributed; 1 has markers (rate 100), 3 do not.
+    presence_rate = 0.25, mean_intensity = 100 → raw = 25.0."""
+    from ai_friction_map.events import BaselineSet
+    from ai_friction_map.scoring import score_corpus
+
+    events = [
+        _mk_event(
+            [Block(type="thinking", thinking="wait", attribution=_attr("/proj/x.py"))],
+            event_index=0,
+        ),
+        _mk_event(
+            [Block(type="thinking", thinking="ordinary one", attribution=_attr("/proj/x.py"))],
+            event_index=1,
+        ),
+        _mk_event(
+            [Block(type="thinking", thinking="ordinary two", attribution=_attr("/proj/x.py"))],
+            event_index=2,
+        ),
+        _mk_event(
+            [Block(type="thinking", thinking="ordinary three", attribution=_attr("/proj/x.py"))],
+            event_index=3,
+        ),
+    ]
+    corpus = _mk_corpus_for_scoring(events)
+    results = score_corpus(corpus, BaselineSet())
+    sig = results["/proj/x.py"].components.markers
+    assert abs(sig.raw - 25.0) < 1e-9
+
+
+def test_marker_contribution_multi_file_dilution():
+    """A single thinking block attributed to two files distributes its
+    presence × intensity contribution as 0.5 each, not full weight per
+    file. Both files should compute the same raw under symmetric input.
+    """
+    from ai_friction_map.events import BaselineSet
+    from ai_friction_map.scoring import _aggregate_block_signals, score_corpus
+
+    block = Block(
+        type="thinking", thinking="wait", attribution=_attr("/proj/a.py", "/proj/b.py"),
+    )
+    events = [_mk_event([block], event_index=0)]
+    corpus = _mk_corpus_for_scoring(events)
+    aggs = _aggregate_block_signals(corpus)
+    for path in ("/proj/a.py", "/proj/b.py"):
+        agg = aggs[path]
+        assert abs(agg.dilution_weight_sum - 0.5) < 1e-9
+        assert abs(agg.positive_block_weight_sum - 0.5) < 1e-9
+        # weighted_intensity_positive_sum = rate * share = 100.0 * 0.5
+        assert abs(agg.weighted_intensity_positive_sum - 50.0) < 1e-9
+
+    results = score_corpus(corpus, BaselineSet())
+    sig_a = results["/proj/a.py"].components.markers
+    sig_b = results["/proj/b.py"].components.markers
+    # presence = 0.5/0.5 = 1.0; intensity = 50/0.5 = 100; raw = 100.
+    assert abs(sig_a.raw - 100.0) < 1e-9
+    assert abs(sig_b.raw - 100.0) < 1e-9

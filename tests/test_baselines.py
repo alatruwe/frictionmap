@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from ai_friction_map.baselines import (
     LOW_CONFIDENCE_N,
     MIN_SESSION_BLOCKS,
+    _presence_intensity_stat,
     compute_corpus_baseline,
     compute_session_baselines,
     load_baseline_cache,
@@ -18,6 +20,8 @@ from ai_friction_map.events import (
     Block,
     Corpus,
     ParsedEvent,
+    PresenceIntensityBaselineStat,
+    RobustZBaselineStat,
 )
 
 
@@ -138,3 +142,88 @@ def test_corpus_baseline_no_thinking_blocks():
     assert baseline.block_length_words.n == 0
     assert baseline.block_length_words.median == 0.0
     assert baseline.block_length_words.low_confidence is True
+
+
+def test_presence_intensity_stat_basic():
+    # 10 values; 4 positive (1.0, 2.0, 3.0, 5.0) → median 2.5
+    values = [0.0, 0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0, 5.0]
+    stat = _presence_intensity_stat(values)
+    assert isinstance(stat, PresenceIntensityBaselineStat)
+    assert stat.kind == "presence_intensity"
+    assert stat.n_blocks == 10
+    assert stat.n_positive_blocks == 4
+    assert abs(stat.presence_rate_corpus - 0.4) < 1e-9
+    assert abs(stat.median_intensity_among_positives - 2.5) < 1e-9
+    assert stat.low_confidence is True  # n_positive < 20
+
+
+def test_presence_intensity_stat_empty():
+    stat = _presence_intensity_stat([])
+    assert stat.n_blocks == 0
+    assert stat.n_positive_blocks == 0
+    assert stat.presence_rate_corpus == 0.0
+    assert stat.median_intensity_among_positives == 0.0
+    assert stat.low_confidence is True
+
+
+def test_presence_intensity_stat_all_zero():
+    stat = _presence_intensity_stat([0.0] * 50)
+    assert stat.n_blocks == 50
+    assert stat.n_positive_blocks == 0
+    assert stat.presence_rate_corpus == 0.0
+    assert stat.median_intensity_among_positives == 0.0
+    assert stat.low_confidence is True
+
+
+def test_corpus_markers_baseline_uses_presence_intensity_branch():
+    corpus = Corpus()
+    sid, events = _mk_thinking_session("s1", n_blocks=3)
+    corpus.sessions[sid] = events
+    baseline = compute_corpus_baseline(corpus)
+    assert isinstance(baseline.markers_per_100w, PresenceIntensityBaselineStat)
+    assert baseline.markers_per_100w.kind == "presence_intensity"
+    # Other signals stay on robust_z.
+    assert isinstance(baseline.block_length_words, RobustZBaselineStat)
+    assert baseline.block_length_words.kind == "robust_z"
+
+
+def test_baseline_cache_round_trip_with_presence_intensity_markers(tmp_path: Path):
+    target = tmp_path / "baseline.json"
+    bs = BaselineSet(
+        block_length_words=RobustZBaselineStat(
+            median=10.0, mad=2.0, n=50, low_confidence=False
+        ),
+        markers_per_100w=PresenceIntensityBaselineStat(
+            presence_rate_corpus=0.34,
+            median_intensity_among_positives=1.1,
+            n_blocks=600,
+            n_positive_blocks=204,
+            low_confidence=False,
+        ),
+    )
+    save_baseline_cache(bs, target)
+    loaded = load_baseline_cache(target)
+    assert loaded is not None
+    mk = loaded.markers_per_100w
+    assert isinstance(mk, PresenceIntensityBaselineStat)
+    assert mk.kind == "presence_intensity"
+    assert abs(mk.presence_rate_corpus - 0.34) < 1e-9
+    assert abs(mk.median_intensity_among_positives - 1.1) < 1e-9
+    assert mk.n_blocks == 600
+    assert mk.n_positive_blocks == 204
+
+
+def test_baseline_cache_legacy_shape_invalidates(tmp_path: Path):
+    """Schema 1.2 caches (markers stored as robust-z, no `kind` field)
+    must invalidate on load so the next run regenerates under 1.3."""
+    target = tmp_path / "baseline.json"
+    legacy = {
+        "block_length_words": {
+            "median": 10.0, "mad": 2.0, "n": 50, "low_confidence": False
+        },
+        "markers_per_100w": {
+            "median": 1.2, "mad": 0.9, "n": 487, "low_confidence": False
+        },
+    }
+    target.write_text(json.dumps(legacy))
+    assert load_baseline_cache(target) is None

@@ -204,11 +204,15 @@ def test_report_has_empty_baselines_in_2c(tmp_path: Path) -> None:
     _, report = _scan(tmp_path)
     assert report.session_baselines == {}
     bs = report.baselines.corpus.markers_per_100w
-    assert bs.median == 0.0 and bs.mad == 0.0 and bs.n == 0
+    assert bs.kind == "presence_intensity"
+    assert bs.n_blocks == 0
+    assert bs.n_positive_blocks == 0
+    assert bs.presence_rate_corpus == 0.0
+    assert bs.median_intensity_among_positives == 0.0
     assert bs.low_confidence is True
 
 
-def test_schema_version_is_1_2(tmp_path: Path) -> None:
+def test_schema_version_is_1_3(tmp_path: Path) -> None:
     jsonl(tmp_path / "s.jsonl", [
         assistant("s1", "u1", [
             {"type": "tool_use", "id": "t1", "name": "Edit",
@@ -217,7 +221,7 @@ def test_schema_version_is_1_2(tmp_path: Path) -> None:
         ]),
     ])
     _, report = _scan(tmp_path)
-    assert report.meta.schema_version == "1.2"
+    assert report.meta.schema_version == "1.3"
     assert report.meta.name == "attune"
 
 

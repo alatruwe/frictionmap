@@ -67,5 +67,5 @@ def test_scan_report_contains_counts(fake_home, tmp_path, monkeypatch):
     rendered = (proj / "report.html").read_text(encoding="utf-8")
     assert '"session_count": 1' in rendered
     assert '"total_event_count": 3' in rendered
-    assert '"schema_version": "1.2"' in rendered
+    assert '"schema_version": "1.3"' in rendered
     assert "{{DATA}}" not in rendered

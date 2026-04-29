@@ -6,16 +6,16 @@
     "thinking_block_count": 480,
     "total_event_count": 7200,
     "generated_at": "2026-04-27T14:00:00Z",
-    "schema_version": "1.2"
+    "schema_version": "1.3"
   },
   "baselines": {
     "corpus": {
-      "block_length_words": {"median": 118, "mad": 36, "n": 487, "low_confidence": false},
-      "question_rate_per_100w": {"median": 0.7, "mad": 0.4, "n": 487, "low_confidence": false},
-      "markers_per_100w": {"median": 1.2, "mad": 0.9, "n": 487, "low_confidence": false},
-      "reasoning_to_output_ratio": {"median": 2.4, "mad": 1.1, "n": 487, "low_confidence": false},
-      "tool_use_coupling_rate": {"median": 0.62, "mad": 0.18, "n": 487, "low_confidence": false},
-      "leakage_events_per_session": {"median": 2.1, "mad": 1.4, "n": 65, "low_confidence": false}
+      "block_length_words": {"kind": "robust_z", "median": 118, "mad": 36, "n": 487, "low_confidence": false},
+      "question_rate_per_100w": {"kind": "robust_z", "median": 0.7, "mad": 0.4, "n": 487, "low_confidence": false},
+      "markers_per_100w": {"kind": "presence_intensity", "presence_rate_corpus": 0.34, "median_intensity_among_positives": 1.2, "n_blocks": 487, "n_positive_blocks": 165, "low_confidence": false},
+      "reasoning_to_output_ratio": {"kind": "robust_z", "median": 2.4, "mad": 1.1, "n": 487, "low_confidence": false},
+      "tool_use_coupling_rate": {"kind": "robust_z", "median": 0.62, "mad": 0.18, "n": 487, "low_confidence": false},
+      "leakage_events_per_session": {"kind": "robust_z", "median": 2.1, "mad": 1.4, "n": 65, "low_confidence": false}
     }
   },
   "session_baselines": {},
