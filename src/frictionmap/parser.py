@@ -4,13 +4,13 @@ import json
 import logging
 from pathlib import Path
 
-from ai_friction_map.attribution import attribute_thinking_blocks
-from ai_friction_map.clusters import detect_excerpts
-from ai_friction_map.events import Block, Corpus, ParsedEvent, ToolCall
-from ai_friction_map.extraction import extract_file_paths
-from ai_friction_map.leakage import aggregate_leakage
-from ai_friction_map.paths import canonicalize_path
-from ai_friction_map.tool_usage import aggregate_tool_usage
+from frictionmap.attribution import attribute_thinking_blocks
+from frictionmap.clusters import detect_excerpts
+from frictionmap.events import Block, Corpus, ParsedEvent, ToolCall
+from frictionmap.extraction import extract_file_paths
+from frictionmap.leakage import aggregate_leakage
+from frictionmap.paths import canonicalize_path
+from frictionmap.tool_usage import aggregate_tool_usage
 
 logger = logging.getLogger(__name__)
 

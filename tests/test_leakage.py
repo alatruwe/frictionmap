@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ai_friction_map.leakage import aggregate_leakage
-from ai_friction_map.parser import parse_sessions
+from frictionmap.leakage import aggregate_leakage
+from frictionmap.parser import parse_sessions
 from tests._factories import (
     assistant,
     jsonl,

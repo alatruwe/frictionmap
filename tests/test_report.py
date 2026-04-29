@@ -4,8 +4,8 @@ from pathlib import Path
 
 import json
 
-from ai_friction_map.parser import parse_sessions
-from ai_friction_map.report import _extract_codebase_name, assemble_report
+from frictionmap.parser import parse_sessions
+from frictionmap.report import _extract_codebase_name, assemble_report
 from tests._factories import assistant, jsonl, progress, user
 
 

@@ -9,7 +9,7 @@ straight counter.
 """
 from __future__ import annotations
 
-from ai_friction_map.events import Corpus, ToolUsage
+from frictionmap.events import Corpus, ToolUsage
 
 _TOOL_TO_FIELD = {
     "Read": "read",

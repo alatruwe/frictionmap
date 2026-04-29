@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_friction_map.cli import main
+from frictionmap.cli import main
 
 
 def _slug(path: Path) -> str:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ai_friction_map.parser import parse_sessions
+from frictionmap.parser import parse_sessions
 from tests._factories import assistant, jsonl, progress
 
 

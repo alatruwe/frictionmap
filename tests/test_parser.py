@@ -4,7 +4,7 @@ import json
 import tracemalloc
 from pathlib import Path
 
-from ai_friction_map.parser import parse_sessions
+from frictionmap.parser import parse_sessions
 
 
 def _jsonl(path: Path, records: list[dict]) -> None:
@@ -158,7 +158,7 @@ def test_malformed_line_logged_and_skipped(tmp_path, caplog):
         + json.dumps(_bare("s1", "u2", "ai-title")) + "\n",
         encoding="utf-8",
     )
-    with caplog.at_level("WARNING", logger="ai_friction_map.parser"):
+    with caplog.at_level("WARNING", logger="frictionmap.parser"):
         corpus = parse_sessions(tmp_path)
     assert corpus.event_count == 2
     assert any("malformed" in r.getMessage() for r in caplog.records)
@@ -172,7 +172,7 @@ def test_unknown_type_logged_once_and_counted(tmp_path, caplog):
     ]
     records.append(_bare("s1", "u9", "ai-title"))
     _jsonl(tmp_path / "s.jsonl", records)
-    with caplog.at_level("WARNING", logger="ai_friction_map.parser"):
+    with caplog.at_level("WARNING", logger="frictionmap.parser"):
         corpus = parse_sessions(tmp_path)
     assert corpus.unknown_types.get("mystery") == 3
     warnings = [r for r in caplog.records if "mystery" in r.getMessage()]

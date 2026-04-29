@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ai_friction_map.parser import parse_sessions
-from ai_friction_map.windows import (
+from frictionmap.parser import parse_sessions
+from frictionmap.windows import (
     get_boundary_clip_count,
     is_compact_boundary,
     reset_boundary_clip_count,

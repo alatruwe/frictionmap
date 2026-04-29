@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ai-friction-map"
+name = "frictionmap"
 version = "0.0.1"
 description = "CLI that parses Claude Code session logs and produces an HTML friction heatmap of your codebase."
 readme = "README.md"
@@ -16,7 +16,7 @@ dependencies = ["radon>=6.0"]
 dev = ["pytest"]
 
 [project.scripts]
-"ai-friction-map" = "ai_friction_map.cli:main"
+"frictionmap" = "frictionmap.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ai_friction_map"]
+packages = ["src/frictionmap"]

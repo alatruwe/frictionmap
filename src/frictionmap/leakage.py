@@ -6,8 +6,8 @@ compact_boundary events are hard stops.
 """
 from __future__ import annotations
 
-from ai_friction_map.events import Block, Corpus, LeakageCounts, ParsedEvent
-from ai_friction_map.windows import window_events
+from frictionmap.events import Block, Corpus, LeakageCounts, ParsedEvent
+from frictionmap.windows import window_events
 
 _DEFAULT_N = 3
 

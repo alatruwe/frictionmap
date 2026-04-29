@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ai_friction_map.events import Attribution, Block, Corpus, ParsedEvent
-from ai_friction_map.scoring import (
+from frictionmap.events import Attribution, Block, Corpus, ParsedEvent
+from frictionmap.scoring import (
     compute_block_signals,
     compute_edit_churn,
     compute_reasoning_to_output_ratio,
@@ -273,8 +273,8 @@ def test_reasoning_to_output_ratio_parked_at_zero_weight():
     signal still computes and emits in ScoreComponents (so revisiting
     is just a weight bump), but contributes nothing to the score.
     """
-    from ai_friction_map.events import BaselineSet, BaselineStat, LeakageCounts
-    from ai_friction_map.scoring import (
+    from frictionmap.events import BaselineSet, BaselineStat, LeakageCounts
+    from frictionmap.scoring import (
         WEIGHTS,
         REASONING_TO_OUTPUT_CAP,
         _BlockAgg,
@@ -326,8 +326,8 @@ def _attr(*paths: str) -> Attribution:
 
 
 def test_marker_contribution_zero_when_no_attributed_blocks():
-    from ai_friction_map.events import BaselineSet, LeakageCounts
-    from ai_friction_map.scoring import WEIGHTS, _BlockAgg, score_file
+    from frictionmap.events import BaselineSet, LeakageCounts
+    from frictionmap.scoring import WEIGHTS, _BlockAgg, score_file
 
     result = score_file(
         path="/proj/x.py",
@@ -345,8 +345,8 @@ def test_marker_contribution_zero_when_no_attributed_blocks():
 
 
 def test_marker_contribution_zero_when_no_positive_blocks():
-    from ai_friction_map.events import BaselineSet
-    from ai_friction_map.scoring import _aggregate_block_signals, score_corpus
+    from frictionmap.events import BaselineSet
+    from frictionmap.scoring import _aggregate_block_signals, score_corpus
 
     # Three thinking blocks attributed to /proj/x.py, none containing
     # any marker → presence_rate = 0 → contribution = 0.
@@ -369,8 +369,8 @@ def test_marker_contribution_zero_when_no_positive_blocks():
 
 def test_marker_contribution_when_every_attributed_block_has_markers():
     """Presence rate = 1.0; raw equals mean intensity over positive blocks."""
-    from ai_friction_map.events import BaselineSet
-    from ai_friction_map.scoring import WEIGHTS, score_corpus
+    from frictionmap.events import BaselineSet
+    from frictionmap.scoring import WEIGHTS, score_corpus
 
     # Each block is "wait" (1 marker, 1 word) → markers_per_100w = 100.
     events = [
@@ -393,8 +393,8 @@ def test_marker_contribution_when_every_attributed_block_has_markers():
 def test_marker_contribution_partial_presence():
     """4 blocks attributed; 1 has markers (rate 100), 3 do not.
     presence_rate = 0.25, mean_intensity = 100 → raw = 25.0."""
-    from ai_friction_map.events import BaselineSet
-    from ai_friction_map.scoring import score_corpus
+    from frictionmap.events import BaselineSet
+    from frictionmap.scoring import score_corpus
 
     events = [
         _mk_event(
@@ -425,8 +425,8 @@ def test_marker_contribution_multi_file_dilution():
     presence × intensity contribution as 0.5 each, not full weight per
     file. Both files should compute the same raw under symmetric input.
     """
-    from ai_friction_map.events import BaselineSet
-    from ai_friction_map.scoring import _aggregate_block_signals, score_corpus
+    from frictionmap.events import BaselineSet
+    from frictionmap.scoring import _aggregate_block_signals, score_corpus
 
     block = Block(
         type="thinking", thinking="wait", attribution=_attr("/proj/a.py", "/proj/b.py"),

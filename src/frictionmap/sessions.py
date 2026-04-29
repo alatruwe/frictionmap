@@ -113,11 +113,11 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
     """
     import tempfile
 
-    from ai_friction_map.baselines import load_baseline_cache
-    from ai_friction_map.events import BaselineSet
-    from ai_friction_map.parser import parse_sessions
-    from ai_friction_map.report import assemble_report
-    from ai_friction_map.scoring import score_corpus
+    from frictionmap.baselines import load_baseline_cache
+    from frictionmap.events import BaselineSet
+    from frictionmap.parser import parse_sessions
+    from frictionmap.report import assemble_report
+    from frictionmap.scoring import score_corpus
 
     src_path = sessions_dir / f"{session_id}.jsonl"
     if not src_path.exists():
@@ -134,7 +134,7 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
     if cached is None:
         warning = (
             "baseline cache absent — using absolute (raw × weight) scoring. "
-            "Run 'ai-friction-map scan' first to enable z-scored ranking "
+            "Run 'frictionmap scan' first to enable z-scored ranking "
             "that matches the HTML report."
         )
         baseline = BaselineSet()  # mad=0 → z=0 → contribution = raw * 0 → effectively raw-anchored

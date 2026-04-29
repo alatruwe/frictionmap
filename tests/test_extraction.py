@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ai_friction_map.extraction import extract_file_paths
+from frictionmap.extraction import extract_file_paths
 
 
 def test_read_extracts_file_path():
@@ -124,7 +124,7 @@ def test_unknown_tool_returns_empty_silently_with_debug_log(caplog):
     # via the _logged_unknown_tools dedup set. Both invariants matter:
     # silent stdout/stderr for users, and a one-shot diagnostic that
     # survives future refactors.
-    with caplog.at_level("DEBUG", logger="ai_friction_map.extraction"):
+    with caplog.at_level("DEBUG", logger="frictionmap.extraction"):
         result1 = extract_file_paths("MysteryTool1", {"x": 1}, None)
         result2 = extract_file_paths("MysteryTool1", {"x": 2}, None)
     assert result1 == []

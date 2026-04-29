@@ -11,9 +11,9 @@ import time
 from collections import Counter
 from pathlib import Path
 
-from ai_friction_map.clusters import find_markers
-from ai_friction_map.parser import parse_sessions
-from ai_friction_map.windows import (
+from frictionmap.clusters import find_markers
+from frictionmap.parser import parse_sessions
+from frictionmap.windows import (
     get_boundary_clip_count,
     reset_boundary_clip_count,
 )

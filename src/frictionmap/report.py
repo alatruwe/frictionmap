@@ -11,12 +11,12 @@ from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ai_friction_map.baselines import (
+from frictionmap.baselines import (
     compute_corpus_baseline,
     compute_session_baselines,
 )
-from ai_friction_map.complexity import compute_file_complexity
-from ai_friction_map.events import (
+from frictionmap.complexity import compute_file_complexity
+from frictionmap.events import (
     Baselines,
     CodebaseMeta,
     Corpus,
@@ -27,7 +27,7 @@ from ai_friction_map.events import (
     ThinkingExcerpt,
     ToolUsage,
 )
-from ai_friction_map.scoring import compute_block_signals, score_corpus
+from frictionmap.scoring import compute_block_signals, score_corpus
 
 
 def assemble_report(
@@ -131,7 +131,7 @@ def assemble_report(
 def _build_session_titles(sessions_dir: Path | None) -> dict[str, str]:
     if sessions_dir is None:
         return {}
-    from ai_friction_map.sessions import _last_ai_title
+    from frictionmap.sessions import _last_ai_title
     titles: dict[str, str] = {}
     for path in sessions_dir.glob("*.jsonl"):
         title = _last_ai_title(path)

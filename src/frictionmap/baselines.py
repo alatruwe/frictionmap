@@ -15,7 +15,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from ai_friction_map.events import (
+from frictionmap.events import (
     BaselineSet,
     BaselineStat,
     Corpus,
@@ -23,8 +23,8 @@ from ai_friction_map.events import (
     PresenceIntensityBaselineStat,
     RobustZBaselineStat,
 )
-from ai_friction_map.leakage import count_session_leakage_events
-from ai_friction_map.scoring import (
+from frictionmap.leakage import count_session_leakage_events
+from frictionmap.scoring import (
     compute_block_signals,
     compute_edit_churn,
     compute_reread_bursts,
@@ -33,7 +33,7 @@ from ai_friction_map.scoring import (
 MIN_SESSION_BLOCKS = 20
 LOW_CONFIDENCE_N = 20
 
-CACHE_PATH = Path("~/.cache/ai-friction-map/baseline.json").expanduser()
+CACHE_PATH = Path("~/.cache/frictionmap/baseline.json").expanduser()
 
 
 def _median(sorted_values: list[float]) -> float:

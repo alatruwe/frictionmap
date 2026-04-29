@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_friction_map.render import load_template_assets
+from frictionmap.render import load_template_assets
 
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "corpus_overview"

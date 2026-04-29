@@ -12,7 +12,7 @@ import logging
 import re
 from pathlib import Path
 
-from ai_friction_map.events import CyclomaticMetrics, FileComplexity
+from frictionmap.events import CyclomaticMetrics, FileComplexity
 
 logger = logging.getLogger(__name__)
 

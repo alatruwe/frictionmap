@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ai_friction_map.attribution import attribute_thinking_blocks
-from ai_friction_map.parser import parse_sessions
+from frictionmap.attribution import attribute_thinking_blocks
+from frictionmap.parser import parse_sessions
 from tests._factories import (
     assistant,
     jsonl,
@@ -152,7 +152,7 @@ def test_attribution_unique_basename_fires_when_tier1_misses():
     # rarely fires independently.
     # This test just exercises the Tier 2 code path by forcing it via a
     # direct attribute call where Tier 1 is bypassed.
-    from ai_friction_map.attribution import _tier2_unique_basename
+    from frictionmap.attribution import _tier2_unique_basename
     basename_to_paths = {"storage.py": {"/proj/storage.py"}}
     result = _tier2_unique_basename("talking about storage.py", basename_to_paths)
     assert result == ["/proj/storage.py"]
@@ -162,7 +162,7 @@ def test_attribution_ambiguous_basename_falls_through():
     # Two session files share basename utils.py. Thinking mentions utils.py.
     # Tier 1 will match both because "utils.py" is a suffix of both canonical
     # paths. This test ensures Tier 2 itself (in isolation) drops ambiguous.
-    from ai_friction_map.attribution import _tier2_unique_basename
+    from frictionmap.attribution import _tier2_unique_basename
     basename_to_paths = {"utils.py": {"/proj/a/utils.py", "/proj/b/utils.py"}}
     result = _tier2_unique_basename("look at utils.py", basename_to_paths)
     assert result == []

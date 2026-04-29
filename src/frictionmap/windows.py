@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ai_friction_map.events import ParsedEvent
+from frictionmap.events import ParsedEvent
 
 _boundary_clip_count: int = 0
 

@@ -9,8 +9,8 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from ai_friction_map.clusters import find_markers, strip_code_fences
-from ai_friction_map.events import (
+from frictionmap.clusters import find_markers, strip_code_fences
+from frictionmap.events import (
     BaselineSet,
     BaselineStat,
     BlockSignals,
@@ -20,7 +20,7 @@ from ai_friction_map.events import (
     ScoreComponents,
     SignalValue,
 )
-from ai_friction_map.windows import window_events
+from frictionmap.windows import window_events
 
 _WORD_RE = re.compile(r"\S+")
 

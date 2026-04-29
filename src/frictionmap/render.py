@@ -10,12 +10,12 @@ import json
 from dataclasses import asdict
 from importlib.resources import files
 
-from ai_friction_map.events import Report
+from frictionmap.events import Report
 
 
 def load_template_assets() -> tuple[str, str, str]:
     """Read the three bundled template assets from the package."""
-    pkg = files("ai_friction_map")
+    pkg = files("frictionmap")
     template = pkg.joinpath("templates/report.html.template").read_text(encoding="utf-8")
     app_jsx = pkg.joinpath("templates/app.jsx").read_text(encoding="utf-8")
     styles_css = pkg.joinpath("templates/styles.css").read_text(encoding="utf-8")

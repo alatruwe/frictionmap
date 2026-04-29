@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from ai_friction_map.clusters import (
+from frictionmap.clusters import (
     _LEXICON,
     detect_excerpts,
     find_markers,
     strip_code_fences,
 )
-from ai_friction_map.events import Block, Corpus, ParsedEvent
+from frictionmap.events import Block, Corpus, ParsedEvent
 
 
 def _mk_corpus_with_thinking(text: str) -> Corpus:
@@ -205,7 +205,7 @@ def test_strip_code_fences_removes_fenced_block():
 def test_find_markers_offsets_roundtrip_through_word_index():
     # Char offsets emitted by find_markers must locate words in the
     # original text — the downstream cluster detector relies on this.
-    from ai_friction_map.clusters import _WORD_RE, _char_to_word_idx
+    from frictionmap.clusters import _WORD_RE, _char_to_word_idx
     text = "some preamble wait, reconsidering this"
     markers = find_markers(text)
     word_spans = [(m.start(), m.end()) for m in _WORD_RE.finditer(text)]

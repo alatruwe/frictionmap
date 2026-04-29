@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import re
 
-from ai_friction_map.events import Attribution, Corpus, ParsedEvent
-from ai_friction_map.extraction import _PATH_SUFFIXES
-from ai_friction_map.windows import window_events
+from frictionmap.events import Attribution, Corpus, ParsedEvent
+from frictionmap.extraction import _PATH_SUFFIXES
+from frictionmap.windows import window_events
 
 _DEFAULT_PROXIMITY_N = 3
 

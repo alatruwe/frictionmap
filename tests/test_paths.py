@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from ai_friction_map.paths import canonicalize_path
+from frictionmap.paths import canonicalize_path
 
 
 def test_relative_resolves_against_cwd(tmp_path):
@@ -29,7 +29,7 @@ def test_symlink_resolution(tmp_path):
 
 def test_missing_cwd_returns_raw(caplog):
     raw = "some/relative/path.py"
-    with caplog.at_level("DEBUG", logger="ai_friction_map.paths"):
+    with caplog.at_level("DEBUG", logger="frictionmap.paths"):
         assert canonicalize_path(raw, None) == raw
 
 

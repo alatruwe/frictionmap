@@ -5,7 +5,7 @@ import os
 import time
 from pathlib import Path
 
-from ai_friction_map.sessions import (
+from frictionmap.sessions import (
     DEFAULT_WINDOW_HOURS,
     find_active_sessions,
     format_relative_time,

@@ -4,8 +4,8 @@ import json
 import re
 from html.parser import HTMLParser
 
-from ai_friction_map.events import CodebaseMeta, FileFriction, Report
-from ai_friction_map.render import load_template_assets, render_report
+from frictionmap.events import CodebaseMeta, FileFriction, Report
+from frictionmap.render import load_template_assets, render_report
 
 
 def _minimal_report() -> Report:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from ai_friction_map.extraction import _reset_logged_unknown_tools
-from ai_friction_map.windows import reset_boundary_clip_count
+from frictionmap.extraction import _reset_logged_unknown_tools
+from frictionmap.windows import reset_boundary_clip_count
 
 
 @pytest.fixture(autouse=True)

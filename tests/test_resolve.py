@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
-from ai_friction_map.cli import resolve_sessions_dir
+from frictionmap.cli import resolve_sessions_dir
 
 
 def _slug(path: Path) -> str:

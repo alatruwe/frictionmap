@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from ai_friction_map.events import Corpus, Highlight, ThinkingExcerpt
+from frictionmap.events import Corpus, Highlight, ThinkingExcerpt
 
 CLUSTER_GAP_WORDS = 100
 EXCERPT_WORDS = 50

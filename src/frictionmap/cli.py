@@ -5,18 +5,18 @@ import os
 import sys
 from pathlib import Path
 
-from ai_friction_map import __version__
-from ai_friction_map.baselines import save_baseline_cache
-from ai_friction_map.parser import parse_sessions
-from ai_friction_map.render import load_template_assets, render_report
-from ai_friction_map.report import assemble_report
-from ai_friction_map.sessions import (
+from frictionmap import __version__
+from frictionmap.baselines import save_baseline_cache
+from frictionmap.parser import parse_sessions
+from frictionmap.render import load_template_assets, render_report
+from frictionmap.report import assemble_report
+from frictionmap.sessions import (
     find_active_sessions,
     format_relative_time,
     match_session,
     summarize_session,
 )
-from ai_friction_map.windows import get_boundary_clip_count, reset_boundary_clip_count
+from frictionmap.windows import get_boundary_clip_count, reset_boundary_clip_count
 
 ACTIVE_SESSION_WINDOW_HOURS = 12
 
@@ -80,7 +80,7 @@ def _cmd_scan(args: argparse.Namespace) -> int:
         f"{len(report.files)} files with friction signals. "
         f"Report: report.html"
     )
-    if args.checkpoint or os.environ.get("AI_FRICTION_MAP_CHECKPOINT") == "1":
+    if args.checkpoint or os.environ.get("FRICTIONMAP_CHECKPOINT") == "1":
         _print_checkpoint(corpus, report)
     return 0
 
@@ -99,7 +99,7 @@ def _cmd_active_sessions(args: argparse.Namespace) -> int:
         print(
             f"  [{s.session_id[:8]}]  \"{s.title}\"    {format_relative_time(s.mtime)}"
         )
-    print("Run: ai-friction-map session <id-or-title-query>")
+    print("Run: frictionmap session <id-or-title-query>")
     return 0
 
 
@@ -261,7 +261,7 @@ def _cmd_session(args: argparse.Namespace) -> int:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="ai-friction-map",
+        prog="frictionmap",
         description="Parse Claude Code session logs and report friction across your codebase.",
     )
     parser.add_argument(

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ai_friction_map.baselines import (
+from frictionmap.baselines import (
     LOW_CONFIDENCE_N,
     MIN_SESSION_BLOCKS,
     _presence_intensity_stat,
@@ -14,7 +14,7 @@ from ai_friction_map.baselines import (
     save_baseline_cache,
     z_score,
 )
-from ai_friction_map.events import (
+from frictionmap.events import (
     BaselineSet,
     BaselineStat,
     Block,

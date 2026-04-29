@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ai_friction_map.complexity import compute_file_complexity
-from ai_friction_map.events import CyclomaticMetrics
+from frictionmap.complexity import compute_file_complexity
+from frictionmap.events import CyclomaticMetrics
 
 
 def test_python_file_basic_counts(tmp_path: Path) -> None:
