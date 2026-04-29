@@ -20,6 +20,8 @@ from ai_friction_map.events import (
     BaselineStat,
     Corpus,
     ParsedEvent,
+    PresenceIntensityBaselineStat,
+    RobustZBaselineStat,
 )
 from ai_friction_map.leakage import count_session_leakage_events
 from ai_friction_map.scoring import (
@@ -59,6 +61,28 @@ def _stat(values: list[float]) -> BaselineStat:
     med, mad = median_mad(values)
     n = len(values)
     return BaselineStat(median=med, mad=mad, n=n, low_confidence=(n < LOW_CONFIDENCE_N))
+
+
+def _presence_intensity_stat(values: list[float]) -> PresenceIntensityBaselineStat:
+    """Schema 1.3 — markers_per_100w branch.
+
+    `presence_rate_corpus` and `median_intensity_among_positives` are
+    corpus-level context numbers (for a future evidence panel). They are
+    NOT divisors for the per-file score; the file-level scorer computes
+    presence × intensity directly from attributed blocks.
+    """
+    n_blocks = len(values)
+    positives = [v for v in values if v > 0]
+    n_positive = len(positives)
+    presence = n_positive / n_blocks if n_blocks > 0 else 0.0
+    median_intensity = _median(sorted(positives)) if positives else 0.0
+    return PresenceIntensityBaselineStat(
+        presence_rate_corpus=presence,
+        median_intensity_among_positives=median_intensity,
+        n_blocks=n_blocks,
+        n_positive_blocks=n_positive,
+        low_confidence=(n_positive < LOW_CONFIDENCE_N),
+    )
 
 
 def _per_block_samples(
@@ -122,7 +146,7 @@ def compute_corpus_baseline(corpus: Corpus) -> BaselineSet:
     return BaselineSet(
         block_length_words=_stat(lw_all),
         question_rate_per_100w=_stat(qr_all),
-        markers_per_100w=_stat(mp_all),
+        markers_per_100w=_presence_intensity_stat(mp_all),
         reasoning_to_output_ratio=_stat(ro_all),
         tool_use_coupling_rate=_stat(tc_rate_all),
         leakage_events_per_session=_stat(leak_all),
@@ -159,10 +183,15 @@ def compute_session_baselines(corpus: Corpus) -> dict[str, BaselineSet]:
         edit_churn_samples = [
             float(v) for v in compute_edit_churn(single_session).values()
         ]
+        # Note: at session scope, n_positive_blocks < LOW_CONFIDENCE_N
+        # frequently fires even when n_blocks ≥ MIN_SESSION_BLOCKS — the
+        # markers signal is sparse-positive, so most session-level marker
+        # baselines flag low_confidence=True. That is the correct
+        # semantics; fall back to the corpus baseline for confidence.
         out[session_id] = BaselineSet(
             block_length_words=_stat(lw),
             question_rate_per_100w=_stat(qr),
-            markers_per_100w=_stat(mp),
+            markers_per_100w=_presence_intensity_stat(mp),
             reasoning_to_output_ratio=_stat([ro]),
             tool_use_coupling_rate=_stat([tc_rate]),
             leakage_events_per_session=_stat([leak]),
@@ -193,25 +222,46 @@ def load_baseline_cache(path: Path | None = None) -> BaselineSet | None:
         raw = json.loads(target.read_text())
     except (OSError, ValueError):
         return None
+    markers = raw.get("markers_per_100w") or {}
+    if markers.get("kind") != "presence_intensity":
+        # Legacy 1.2 cache (no kind discriminator, or robust_z markers).
+        # Invalidate so the next run regenerates under schema 1.3.
+        return None
     return _baseline_set_from_dict(raw)
 
 
 def _baseline_set_from_dict(d: dict) -> BaselineSet:
-    def stat(field: str) -> BaselineStat:
+    def robust_z(field: str) -> RobustZBaselineStat:
         sub = d.get(field) or {}
-        return BaselineStat(
+        return RobustZBaselineStat(
             median=sub.get("median", 0.0),
             mad=sub.get("mad", 0.0),
             n=sub.get("n", 0),
             low_confidence=sub.get("low_confidence", True),
         )
+
+    markers_sub = d.get("markers_per_100w") or {}
+    markers_stat: RobustZBaselineStat | PresenceIntensityBaselineStat
+    if markers_sub.get("kind") == "presence_intensity":
+        markers_stat = PresenceIntensityBaselineStat(
+            presence_rate_corpus=markers_sub.get("presence_rate_corpus", 0.0),
+            median_intensity_among_positives=markers_sub.get(
+                "median_intensity_among_positives", 0.0
+            ),
+            n_blocks=markers_sub.get("n_blocks", 0),
+            n_positive_blocks=markers_sub.get("n_positive_blocks", 0),
+            low_confidence=markers_sub.get("low_confidence", True),
+        )
+    else:
+        markers_stat = robust_z("markers_per_100w")
+
     return BaselineSet(
-        block_length_words=stat("block_length_words"),
-        question_rate_per_100w=stat("question_rate_per_100w"),
-        markers_per_100w=stat("markers_per_100w"),
-        reasoning_to_output_ratio=stat("reasoning_to_output_ratio"),
-        tool_use_coupling_rate=stat("tool_use_coupling_rate"),
-        leakage_events_per_session=stat("leakage_events_per_session"),
-        reread_bursts_per_file=stat("reread_bursts_per_file"),
-        edit_churn_per_file=stat("edit_churn_per_file"),
+        block_length_words=robust_z("block_length_words"),
+        question_rate_per_100w=robust_z("question_rate_per_100w"),
+        markers_per_100w=markers_stat,
+        reasoning_to_output_ratio=robust_z("reasoning_to_output_ratio"),
+        tool_use_coupling_rate=robust_z("tool_use_coupling_rate"),
+        leakage_events_per_session=robust_z("leakage_events_per_session"),
+        reread_bursts_per_file=robust_z("reread_bursts_per_file"),
+        edit_churn_per_file=robust_z("edit_churn_per_file"),
     )

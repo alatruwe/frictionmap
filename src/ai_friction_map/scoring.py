@@ -152,6 +152,12 @@ class _BlockAgg:
     `tangle_count` is the count of distinct attributed thinking blocks
     where this file appears — multi-file blocks count as 1 per file
     they attribute to, intentionally diverging from the 1/N scoring.
+
+    `positive_block_weight_sum` and `weighted_intensity_positive_sum`
+    feed the schema-1.3 presence/intensity formula for markers. They
+    track the dilution-weighted sub-population of attributed blocks
+    where `markers_per_100w > 0`, with raw intensity (no cluster_weight
+    multiplier — that lived in the z-score era).
     """
     dilution_weight_sum: float = 0.0
     tangle_count: int = 0
@@ -161,6 +167,8 @@ class _BlockAgg:
     weighted_length: float = 0.0
     weighted_question_rate: float = 0.0
     weighted_tool_use_coupling: float = 0.0
+    positive_block_weight_sum: float = 0.0
+    weighted_intensity_positive_sum: float = 0.0
 
 
 def _aggregate_block_signals(corpus: Corpus) -> dict[str, _BlockAgg]:
@@ -180,6 +188,11 @@ def _aggregate_block_signals(corpus: Corpus) -> dict[str, _BlockAgg]:
                 cw = cluster_weight(len(block.excerpts) if block.excerpts else 1)
                 marker_signal = signals.markers_per_100w * cw
                 tc_val = 1.0 if signals.tool_use_coupling else 0.0
+                # Schema 1.3: presence/intensity uses raw markers_per_100w
+                # (no cw); cw stays scoped to the legacy weighted_markers
+                # path that feeds multi_file_weight.
+                marker_rate = signals.markers_per_100w
+                positive = marker_rate > 0
                 for path in paths:
                     agg = out[path]
                     agg.dilution_weight_sum += share
@@ -191,6 +204,9 @@ def _aggregate_block_signals(corpus: Corpus) -> dict[str, _BlockAgg]:
                     agg.weighted_length += signals.length_words * share
                     agg.weighted_question_rate += signals.question_rate_per_100w * share
                     agg.weighted_tool_use_coupling += tc_val * share
+                    if positive:
+                        agg.positive_block_weight_sum += share
+                        agg.weighted_intensity_positive_sum += marker_rate * share
     return out
 
 
@@ -237,12 +253,35 @@ def score_file(
     already baked into the weighted means).
     """
     if block_agg.dilution_weight_sum > 0:
-        markers_raw = block_agg.weighted_markers / block_agg.dilution_weight_sum
         length_raw = block_agg.weighted_length / block_agg.dilution_weight_sum
         question_raw = block_agg.weighted_question_rate / block_agg.dilution_weight_sum
         tc_raw = block_agg.weighted_tool_use_coupling / block_agg.dilution_weight_sum
+        presence_rate = (
+            block_agg.positive_block_weight_sum / block_agg.dilution_weight_sum
+        )
     else:
-        markers_raw = length_raw = question_raw = tc_raw = 0.0
+        length_raw = question_raw = tc_raw = 0.0
+        presence_rate = 0.0
+
+    if block_agg.positive_block_weight_sum > 0:
+        mean_intensity = (
+            block_agg.weighted_intensity_positive_sum
+            / block_agg.positive_block_weight_sum
+        )
+    else:
+        mean_intensity = 0.0
+
+    markers_raw = presence_rate * mean_intensity
+    markers_weight = WEIGHTS["markers"]
+    # Schema 1.3: markers uses presence × intensity, not robust z-score.
+    # z_score=0.0 is a placeholder kept for SignalValue shape stability;
+    # no consumer reads it for the markers signal.
+    markers_signal = SignalValue(
+        raw=markers_raw,
+        z_score=0.0,
+        weight=markers_weight,
+        contribution=markers_raw * markers_weight,
+    )
 
     if block_agg.unweighted_markers > 0:
         mfw = block_agg.weighted_markers / block_agg.unweighted_markers
@@ -250,7 +289,7 @@ def score_file(
         mfw = 1.0
 
     components = ScoreComponents(
-        markers=_signal("markers", markers_raw, baseline.markers_per_100w),
+        markers=markers_signal,
         block_length_words=_signal(
             "block_length_words", length_raw, baseline.block_length_words
         ),

@@ -182,7 +182,8 @@ class ScoreComponents:
 
 
 @dataclass
-class BaselineStat:
+class RobustZBaselineStat:
+    kind: Literal["robust_z"] = "robust_z"
     median: float = 0.0
     mad: float = 0.0
     n: int = 0
@@ -190,15 +191,33 @@ class BaselineStat:
 
 
 @dataclass
+class PresenceIntensityBaselineStat:
+    kind: Literal["presence_intensity"] = "presence_intensity"
+    presence_rate_corpus: float = 0.0
+    median_intensity_among_positives: float = 0.0
+    n_blocks: int = 0
+    n_positive_blocks: int = 0
+    low_confidence: bool = True
+
+
+# Schema 1.3 alias: legacy `BaselineStat(...)` constructors and type
+# annotations resolve to the robust-z branch. The markers signal is the
+# only field whose static type widens to the union.
+BaselineStat = RobustZBaselineStat
+
+
+@dataclass
 class BaselineSet:
-    block_length_words: BaselineStat = field(default_factory=BaselineStat)
-    question_rate_per_100w: BaselineStat = field(default_factory=BaselineStat)
-    markers_per_100w: BaselineStat = field(default_factory=BaselineStat)
-    reasoning_to_output_ratio: BaselineStat = field(default_factory=BaselineStat)
-    tool_use_coupling_rate: BaselineStat = field(default_factory=BaselineStat)
-    leakage_events_per_session: BaselineStat = field(default_factory=BaselineStat)
-    reread_bursts_per_file: BaselineStat = field(default_factory=BaselineStat)
-    edit_churn_per_file: BaselineStat = field(default_factory=BaselineStat)
+    block_length_words: RobustZBaselineStat = field(default_factory=RobustZBaselineStat)
+    question_rate_per_100w: RobustZBaselineStat = field(default_factory=RobustZBaselineStat)
+    markers_per_100w: RobustZBaselineStat | PresenceIntensityBaselineStat = field(
+        default_factory=PresenceIntensityBaselineStat
+    )
+    reasoning_to_output_ratio: RobustZBaselineStat = field(default_factory=RobustZBaselineStat)
+    tool_use_coupling_rate: RobustZBaselineStat = field(default_factory=RobustZBaselineStat)
+    leakage_events_per_session: RobustZBaselineStat = field(default_factory=RobustZBaselineStat)
+    reread_bursts_per_file: RobustZBaselineStat = field(default_factory=RobustZBaselineStat)
+    edit_churn_per_file: RobustZBaselineStat = field(default_factory=RobustZBaselineStat)
 
 
 @dataclass
