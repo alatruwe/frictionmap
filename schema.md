@@ -1,6 +1,6 @@
 # schema.md — Friction Map report data
 
-Decided Monday April 20, 2026. Revised Wednesday April 22 (morning) to carry Phase 2–3 signal expansion. Bumped to **1.2** Wednesday April 22 (evening, post-2B) to make `Attribution.file_paths` a list for multi-file attribution.
+Decided Monday April 20, 2026. Revised Wednesday April 22 (morning) to carry Phase 2–3 signal expansion. Bumped to **1.2** Wednesday April 22 (evening, post-2B) to make `Attribution.file_paths` a list for multi-file attribution. Bumped to **1.3** Tuesday April 28 to split `markers_per_100w` baseline shape from robust-z to presence/intensity (sparse-positive distribution; robust-z collapses).
 
 This is the contract between the parser and the HTML report.
 
@@ -10,6 +10,7 @@ This is the contract between the parser and the HTML report.
 - **1.1** (Wed Apr 22 morning) — Phase 2–3 signal expansion: temporal-proximity attribution tier, tool-behavior leakage, file complexity metrics, corpus/session baselines, per-file tool usage, cluster-count signal on multi-cluster thinking blocks, session_baselines as map.
 - **1.2** (Wed Apr 22 evening) — `Attribution.file_path: string | null` → `Attribution.file_paths: string[]`. Supports thinking blocks that reason about multiple files (41% of attributed blocks on attune). Supports multi-file tool_uses at Tier 3 (Grep scope, Bash multi-file commands). Empty list replaces `null` for unattributed blocks. **Additive change in practice** — the field name changed, but consumers can uniformly treat `file_paths` as "zero or more canonical paths" at every tier.
 - **1.2 (additive, Sun Apr 26)** — `Report.session_titles: Record<string, string>` added, mapping `session_id_short` (first 8 chars of session UUID) → most-recent `aiTitle` for that session. Populated from existing `aiTitle` event extraction (`_last_ai_title` in `sessions.py`). UI uses for excerpt-card display. No version bump per extensibility rules — additive only.
+- **1.3** (Tue Apr 28) — `BaselineStat` becomes a discriminated union with `kind: "robust_z" | "presence_intensity"`. The `markers_per_100w` baseline switches to the presence/intensity branch; every other signal stays on robust_z. Empirical grounding: 66.1% zero rate on attune and brownfield collapses MAD to 0 under robust-z, silencing the per-file marker contribution. The new branch carries `presence_rate_corpus` and `median_intensity_among_positives` as evidence-panel context numbers (not per-file score divisors); the per-file score computes presence × intensity directly from attributed blocks. Cache and emitted JSON dispatch on the `kind` field; legacy 1.2 caches invalidate on load.
 
 ## UI shape (drives the schema)
 
@@ -53,7 +54,7 @@ type CodebaseMeta = {
   thinking_block_count: number   // 607 (as of Apr 22 corpus)
   total_event_count: number      // 9,151 including progress events; feeds the header stat
   generated_at: string           // ISO 8601 timestamp
-  schema_version: string         // "1.2" — bump on breaking changes
+  schema_version: string         // "1.3" — bump on breaking changes
 }
 ```
 
@@ -79,15 +80,27 @@ type BaselineSet = {
   leakage_events_per_session: BaselineStat
 }
 
-type BaselineStat = {
-  median: number
-  mad: number              // median absolute deviation, not standard deviation
-  n: number                // observation count
-  low_confidence: boolean  // true when n < 20
-}
+type BaselineStat =
+  | {
+      kind: "robust_z"
+      median: number
+      mad: number              // median absolute deviation, not standard deviation
+      n: number                // observation count
+      low_confidence: boolean  // true when n < 20
+    }
+  | {
+      kind: "presence_intensity"
+      presence_rate_corpus: number              // fraction of thinking blocks with rate > 0
+      median_intensity_among_positives: number  // median rate, restricted to positive blocks
+      n_blocks: number                          // total blocks observed
+      n_positive_blocks: number                 // blocks with rate > 0
+      low_confidence: boolean                   // true when n_positive_blocks < 20
+    }
 ```
 
-**Median + MAD, not mean + SD.** Robust to outliers. A single 5,000-word thinking block would otherwise drag the mean and distort every z-score downstream.
+**Median + MAD, not mean + SD** (robust_z branch). Robust to outliers. A single 5,000-word thinking block would otherwise drag the mean and distort every z-score downstream.
+
+**Presence/intensity** (1.3) is the branch for sparse-positive signals where the median is zero on most realistic corpora — currently `markers_per_100w` and only `markers_per_100w`. `presence_rate_corpus` and `median_intensity_among_positives` are corpus-level context for a future evidence panel ("this corpus has 34% marker-bearing blocks; this file has 60%"); they are **not** divisors in the per-file score. The per-file scorer computes `presence_rate_F × mean_intensity_F` directly from the file's attributed blocks. Other signals retain the robust_z branch even when sparse — `question_rate_per_100w` is sparse-positive (~93% zero rate) but its scoring weight is currently zero, deferred to Phase 5 weight tuning.
 
 **Session baselines live at the top level**, keyed by `session_id`:
 
@@ -406,6 +419,6 @@ These are properties of the attune corpus, not schema contracts. Captured here f
 
 ## Handoff status
 
-Schema 1.2 stable. `Attribution.file_paths` ships with 2B. 2C builds the remaining `Report` assembly (complexity, tool_usage, session logic) against this schema.
+Schema 1.3 stable. `BaselineStat` discriminated union ships in Phase 5; `markers_per_100w` is the sole signal on the presence/intensity branch.
 
-If a real parser or UI implementation decision forces another structural change, bump `schema_version` to 1.3 and note the change in the version history above.
+If a real parser or UI implementation decision forces another structural change, bump `schema_version` to 1.4 and note the change in the version history above.

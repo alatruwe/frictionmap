@@ -164,19 +164,27 @@ def _print_checkpoint(corpus, report) -> None:
     # 3. Baseline stability — corpus baseline + qualifying-session count.
     print("\n[3] Corpus baseline (median, MAD, n):")
     bs = report.baselines.corpus
-    fields = (
-        "block_length_words", "question_rate_per_100w", "markers_per_100w",
+    robust_z_fields = (
+        "block_length_words", "question_rate_per_100w",
         "reasoning_to_output_ratio", "tool_use_coupling_rate",
         "leakage_events_per_session", "reread_bursts_per_file",
         "edit_churn_per_file",
     )
-    for name in fields:
+    for name in robust_z_fields:
         stat = getattr(bs, name)
         print(
             f"  {name:<32}  median={stat.median:>9.3f}  "
             f"mad={stat.mad:>9.3f}  n={stat.n:>5}"
             f"{'  (low_confidence)' if stat.low_confidence else ''}"
         )
+    # markers_per_100w uses the schema-1.3 presence/intensity branch.
+    mk = bs.markers_per_100w
+    print(
+        f"  {'markers_per_100w':<32}  presence_rate={mk.presence_rate_corpus:>6.3f}  "
+        f"median_intensity_pos={mk.median_intensity_among_positives:>7.3f}  "
+        f"n_blocks={mk.n_blocks:>5}  n_pos={mk.n_positive_blocks:>5}"
+        f"{'  (low_confidence)' if mk.low_confidence else ''}"
+    )
     print(f"  Sessions qualifying for session_baselines: {len(report.session_baselines)}")
 
     # 4. Models in corpus.
