@@ -7,7 +7,7 @@ Three classes of signal, all extracted by counting (no semantic interpretation).
 
 **Lexical.** Re-evaluation markers in extended thinking blocks. Calibrated 13-marker lexicon: `actually`, `wait`, `hmm`, `no,`, `let me reconsider`, `on second thought`, `scratch that`, `hold on`, `reconsidering`, `i was wrong`, `let me think`, `now I'm realizing`, `however`. Hand-tagged against a 30-block sample (100% recall, 42% precision) and validated across three independent codebases.
 
-**Behavioral.** Retry patterns and failed edits in the tool stream: rapid re-reads of the same file, edits that returned errors, edit-then-immediately-edit-again sequences.
+**Behavioral.** Two patterns in the tool stream contribute to the active score: rapid re-reads of the same file, and edit-then-immediately-edit-again bursts. A separate cluster of retry signals (edit failures, grep reformulations, bash retries, read-after-edit) is also detected and emitted in the report payload, but is currently parked at weight 0 — see "Currently parked signals" below.
 
 **Structural.** File-intrinsic complexity (cyclomatic complexity, LOC) as a normalization input, so 2,000-line files don't dominate purely by surface area.
 
@@ -25,6 +25,13 @@ Lexical signals use a presence/intensity split rather than standard z-score norm
 - Retry and failed-edit behavioral patterns per file
 - File-intrinsic complexity as a normalization input
 - Tool-use counts (Read, Edit, Bash, Grep, Glob, Write) per file
+
+## Currently parked signals
+
+These signals are computed and emitted in the report payload but contribute weight 0.0 to the score, pending revisit:
+
+- **`reasoning_to_output_ratio`** — the ratio's denominator (output chars in the same turn) is too small or zero on assistant-thinks-then-tool-uses turns, which is most turns. The ratio saturates per-file and floods the score. Needs a per-file definition rework.
+- **Leakage cluster** (`edit_failures`, `grep_reformulations`, `bash_retries`, `read_after_edit`) — these detect real session-level retry patterns, but the per-file rollup does not fingerprint friction-causing files in either raw-count or per-LOC normalization, on either reference corpus. May earn a role in the per-session debugger view or be reshaped at the per-file level later.
 
 ## What deliberately doesn't get measured
 

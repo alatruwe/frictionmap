@@ -308,6 +308,53 @@ def test_reasoning_to_output_ratio_parked_at_zero_weight():
     assert result.score_pre_normalization == 0.0
 
 
+def test_leakage_signals_parked_at_weight_zero():
+    """Phase 5 #2b: leakage signals are parked; weight=0 each."""
+    from frictionmap.scoring import WEIGHTS
+
+    assert WEIGHTS["edit_failures"] == 0.0
+    assert WEIGHTS["grep_reformulations"] == 0.0
+    assert WEIGHTS["bash_retries"] == 0.0
+    assert WEIGHTS["read_after_edit"] == 0.0
+
+
+def test_leakage_only_corpus_produces_zero_score():
+    """A file with only leakage signals — populated raw counts and a
+    baseline that would yield a large z-score — produces score=0.0
+    after parking. Pins the parking; catches accidental un-parking."""
+    from frictionmap.events import BaselineSet, BaselineStat, LeakageCounts
+    from frictionmap.scoring import _BlockAgg, score_file
+
+    baseline = BaselineSet(
+        leakage_events_per_session=BaselineStat(
+            median=0.0, mad=1.0, n=100, low_confidence=False,
+        ),
+    )
+    result = score_file(
+        path="/proj/x.py",
+        block_agg=_BlockAgg(),
+        reread_count=0,
+        edit_churn_count=0,
+        reasoning_to_output=0.0,
+        leakage=LeakageCounts(
+            edit_failures=5,
+            grep_reformulations=5,
+            bash_retries=5,
+            read_after_edit=5,
+        ),
+        baseline=baseline,
+    )
+    assert result.components.edit_failures.weight == 0.0
+    assert result.components.edit_failures.contribution == 0.0
+    assert result.components.grep_reformulations.weight == 0.0
+    assert result.components.grep_reformulations.contribution == 0.0
+    assert result.components.bash_retries.weight == 0.0
+    assert result.components.bash_retries.contribution == 0.0
+    assert result.components.read_after_edit.weight == 0.0
+    assert result.components.read_after_edit.contribution == 0.0
+    assert result.score_pre_normalization == 0.0
+
+
 # ---------------------------------------------------------------------
 # Schema 1.3: file-level marker scoring uses presence × intensity.
 # ---------------------------------------------------------------------

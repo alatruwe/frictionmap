@@ -120,6 +120,17 @@ def compute_edit_churn(corpus: Corpus) -> dict[str, int]:
 # nearly every attributed file and floods the score. The signal still
 # computes and emits in ScoreComponents so the operationalization can
 # be revisited without re-architecting.
+#
+# Leakage signals (edit_failures, grep_reformulations, bash_retries,
+# read_after_edit) are parked at weight 0.0 pending either a debugger
+# use case (Phase 7) or a per-file definition rework. The corpus
+# baseline (leakage_events_per_session) is sparse-positive — collapsed
+# to median=0 / MAD=0 on both reference corpora — and the per-file
+# rollup does not fingerprint friction-causing files in either raw or
+# per-LOC normalization. The signals still compute and emit in
+# ScoreComponents, and corpus.leakage_by_file is populated; the parking
+# preserves the data without locking the wrong-shape signal into the
+# friction map score.
 WEIGHTS: dict[str, float] = {
     "markers": 0.25,
     "block_length_words": 0.25 / 3,
@@ -128,10 +139,10 @@ WEIGHTS: dict[str, float] = {
     "reread_bursts": 0.25 / 3,
     "edit_churn": 0.25 / 3,
     "reasoning_to_output_ratio": 0.0,
-    "edit_failures": 0.25 / 4,
-    "grep_reformulations": 0.25 / 4,
-    "bash_retries": 0.25 / 4,
-    "read_after_edit": 0.25 / 4,
+    "edit_failures": 0.0,
+    "grep_reformulations": 0.0,
+    "bash_retries": 0.0,
+    "read_after_edit": 0.0,
 }
 
 

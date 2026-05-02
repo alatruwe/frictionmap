@@ -71,6 +71,10 @@ These are named so you don't rediscover them:
 - **Re-read window size.** Burst re-read detection needs a turn-window parameter. Thursday tuning task. Start with a reasonable default (3 or 5 turns); don't bake the constant into multiple places.
 - **Normalization strategy.** Per-file scores divided by file size or LOC to avoid "big file = hot" artifacts. Exact form TBD during Phase 3 scoring work.
 
+## Parked scoring signals
+
+Several entries in `WEIGHTS` (in `src/frictionmap/scoring.py`) are intentionally `0.0` — `reasoning_to_output_ratio`, plus the leakage cluster (`edit_failures`, `grep_reformulations`, `bash_retries`, `read_after_edit`). They still compute and emit in `ScoreComponents`, and `corpus.leakage_by_file` is still populated. Don't "fix" them by assigning weight without checking `project_design/HOW_IT_WORKS.md` (parking rationale) first — each was parked after a specific diagnostic showed the signal was wrong-shape at the per-file level.
+
 ## If you're blocked
 
 Ask. Scope is tight, and the cost of asking is small compared to the cost of guessing wrong.
