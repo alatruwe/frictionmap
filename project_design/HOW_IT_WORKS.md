@@ -32,6 +32,7 @@ These signals are computed and emitted in the report payload but contribute weig
 
 - **`reasoning_to_output_ratio`** — the ratio's denominator (output chars in the same turn) is too small or zero on assistant-thinks-then-tool-uses turns, which is most turns. The ratio saturates per-file and floods the score. Needs a per-file definition rework.
 - **Leakage cluster** (`edit_failures`, `grep_reformulations`, `bash_retries`, `read_after_edit`) — these detect real session-level retry patterns, but the per-file rollup does not fingerprint friction-causing files in either raw-count or per-LOC normalization, on either reference corpus. May earn a role in the per-session debugger view or be reshaped at the per-file level later.
+- **`question_rate_per_100w`** — sparse-positive at ~7% of attributed thinking blocks on both reference corpora (4–5× sparser than markers had pre-reshape). A per-file orthogonality diagnostic showed a hypothetical presence/intensity migration would lift mostly attribution-noise rather than real friction sites: URL fragments, directory paths, single-attribution multi-file splits, and git-ref artifacts. On attune, every file in the hyp top-15 had `n_blocks_attributed < 3`; on brownfield, 11/15 did, and the one production file with thick evidence was already in the current top-20. May earn its weight back behind a broader question-token lexicon or once the path-extractor surfaces fewer non-file paths.
 
 ## What deliberately doesn't get measured
 

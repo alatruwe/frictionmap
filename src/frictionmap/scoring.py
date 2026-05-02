@@ -131,10 +131,23 @@ def compute_edit_churn(corpus: Corpus) -> dict[str, int]:
 # ScoreComponents, and corpus.leakage_by_file is populated; the parking
 # preserves the data without locking the wrong-shape signal into the
 # friction map score.
+#
+# question_rate_per_100w is parked at weight 0.0 pending either a
+# broader question-token lexicon or a path-extractor fix. The signal is
+# sparse-positive at ~7% on both reference corpora (4–5x sparser than
+# markers had pre-reshape), and the per-file orthogonality diagnostic
+# showed that a presence/intensity migration would lift mostly
+# attribution-noise: URL fragments, directory paths, single-attribution
+# multi-file splits, and git-ref artifacts. On attune, every file in
+# the hyp top-15 was small-N (n_blocks_attributed < 3); on brownfield,
+# 11/15. The one production file with thick evidence was already in
+# the current top-20. Signal still computes and emits in
+# ScoreComponents so a future broader lexicon or cleaner path
+# extractor can revisit without re-architecting.
 WEIGHTS: dict[str, float] = {
     "markers": 0.25,
     "block_length_words": 0.25 / 3,
-    "question_rate_per_100w": 0.25 / 3,
+    "question_rate_per_100w": 0.0,
     "tool_use_coupling": 0.25 / 3,
     "reread_bursts": 0.25 / 3,
     "edit_churn": 0.25 / 3,

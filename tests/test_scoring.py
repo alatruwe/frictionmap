@@ -355,6 +355,46 @@ def test_leakage_only_corpus_produces_zero_score():
     assert result.score_pre_normalization == 0.0
 
 
+def test_question_rate_parked_at_weight_zero():
+    """Phase 5 #3: question_rate_per_100w is parked; weight=0."""
+    from frictionmap.scoring import WEIGHTS
+
+    assert WEIGHTS["question_rate_per_100w"] == 0.0
+
+
+def test_question_rate_only_corpus_produces_zero_score():
+    """A file with only a positive question_rate — populated weighted
+    raw value and a baseline that would yield a large z-score —
+    produces score=0.0 after parking. Pins the parking; catches
+    accidental un-parking via weight-tuning regression."""
+    from frictionmap.events import BaselineSet, BaselineStat, LeakageCounts
+    from frictionmap.scoring import _BlockAgg, score_file
+
+    baseline = BaselineSet(
+        question_rate_per_100w=BaselineStat(
+            median=0.0, mad=1.0, n=100, low_confidence=False,
+        ),
+    )
+    block_agg = _BlockAgg(
+        dilution_weight_sum=1.0,
+        weighted_question_rate=10.0,
+    )
+    result = score_file(
+        path="/proj/x.py",
+        block_agg=block_agg,
+        reread_count=0,
+        edit_churn_count=0,
+        reasoning_to_output=0.0,
+        leakage=LeakageCounts(),
+        baseline=baseline,
+    )
+    assert result.components.question_rate_per_100w.raw == 10.0
+    assert result.components.question_rate_per_100w.z_score != 0.0
+    assert result.components.question_rate_per_100w.weight == 0.0
+    assert result.components.question_rate_per_100w.contribution == 0.0
+    assert result.score_pre_normalization == 0.0
+
+
 # ---------------------------------------------------------------------
 # Schema 1.3: file-level marker scoring uses presence × intensity.
 # ---------------------------------------------------------------------
