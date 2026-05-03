@@ -144,11 +144,24 @@ def compute_edit_churn(corpus: Corpus) -> dict[str, int]:
 # the current top-20. Signal still computes and emits in
 # ScoreComponents so a future broader lexicon or cleaner path
 # extractor can revisit without re-architecting.
+#
+# tool_use_coupling is parked at weight 0.0 because the binary signal
+# saturates at 97-99% pooled coupling on both reference corpora.
+# Block-level diagnostic established that this saturation collapses
+# opposite-sign stratum effects: marker-positive thinking blocks lean
+# away from investigative tools (Read/Grep/Glob; gap -0.16/-0.15) and
+# toward bash (gap +0.13/+0.20). The class-stratified versions
+# (bash_coupling_rate, investigative_coupling_rate) are real v2
+# redefinition candidates with measured per-file spread, but validating
+# them through full Section B+C work was deferred to keep v1 scope
+# bounded. The thinking_resolution_rate file-level aggregate (computed
+# from _BlockAgg.coupled_block_count / tangle_count) is still exposed
+# in the report payload, independently of this parked scoring path.
 WEIGHTS: dict[str, float] = {
     "markers": 0.25,
     "block_length_words": 0.25 / 3,
     "question_rate_per_100w": 0.0,
-    "tool_use_coupling": 0.25 / 3,
+    "tool_use_coupling": 0.0,
     "reread_bursts": 0.25 / 3,
     "edit_churn": 0.25 / 3,
     "reasoning_to_output_ratio": 0.0,
