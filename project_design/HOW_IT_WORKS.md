@@ -9,6 +9,8 @@ Three classes of signal, all extracted by counting (no semantic interpretation).
 
 **Behavioral.** Two patterns in the tool stream contribute to the active score: rapid re-reads of the same file, and edit-then-immediately-edit-again bursts. A separate cluster of retry signals (edit failures, grep reformulations, bash retries, read-after-edit) is also detected and emitted in the report payload, but is currently parked at weight 0 — see "Currently parked signals" below.
 
+The re-read window (`RE_READ_WINDOW = 5`) was retained after Phase 5 calibration. A diagnostic compared `N` ∈ {3, 5, 10, ∞ segment-bounded} on attune and brownfield by Jaccard overlap of the resulting per-file burst sets. In the bounded range, window choice is near-cosmetic: Jaccard 0.78–0.93 across `N=3 / 5 / 10` on brownfield, 0.94–1.00 on attune; the unbounded variant surfaces roughly 2× the file count and falls to 0.43–0.60 Jaccard against the bounded sets, so was rejected as too noisy. Brownfield was the discriminating corpus — attune is too calm to surface burst variance at all. The top-ranked brownfield files at `N=5` include `settings/base.py`, `oauth/tests/test_oauth.py`, and `api/common/policy/record_units.py`, known friction sites where markers are the dominant score component.
+
 **Structural.** File-intrinsic complexity (cyclomatic complexity, LOC) as a normalization input, so 2,000-line files don't dominate purely by surface area.
 
 ## Attribution
