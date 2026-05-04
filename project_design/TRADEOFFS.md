@@ -196,6 +196,30 @@ The presence/intensity split keeps both pieces of information: how often the sig
 
 ---
 
+## Attribution noise filter: presentation-layer cut, not pipeline-stage filter
+
+**Decision:** the built-in `IGNORE_PATTERNS` filter (and Phase 5b's configurable extension) operates at FileFriction-assembly time only. Ignored paths participate normally in parsing, attribution, leakage detection, baseline computation, and per-file scoring. They are dropped when assembling `report.files`, not before.
+
+**Why this and not pipeline-stage filtering:**
+
+The corpus baseline is a statistical reference for what's normal in this corpus's thinking — marker presence rate, block length distribution, question rate, etc. It is computed at the block level: every thinking block contributes regardless of which file it ends up attributed to. That semantic — "baselines describe the corpus's thinking, period" — is what makes per-file scores comparable across files within the same run.
+
+Three reasons in order of importance. *Calibration stability:* ignore-list edits are presentation choices ("don't show me `.env`"), not statistical claims ("`.env`-shaped thinking isn't part of this corpus's character"). Filtering at parser or baseline stage couples the two — adding `.lock` to an ignore list would silently shift the marker-rate baseline and reshape z-scores of files that survive, making the friction map move when the user expected only its row count to change. *Multi-file-attribution:* most thinking blocks attribute to several files at once; cleanly excising "ignored content" from baseline requires a policy on mixed-attribution blocks (drop them? down-weight? keep them?), each of which is a non-trivial design call dependent on per-block attribution composition. Presentation-layer filtering avoids the question. *Local failure mode:* a presentation-layer cut fails as "wrong row in the table"; an upstream cut fails as "all rows in the table moved by an unknowable amount." The former is debuggable; the latter is not.
+
+**Rejected alternatives:**
+
+- *Filter at parser stage* — drops ignored files from `tool_usage_by_file` and `leakage_by_file`. Cheaper memory, same baseline behavior. Rejected because it makes the filter's effect non-local and harder to audit: bug reports of the form "why did adding `.lock` to my ignore list change storage.py's score?" become hard to reason about.
+
+- *Filter at baseline stage (block-level)* — exclude blocks whose only attributions are to ignored files. Cleanly addresses the "ignored thinking shouldn't shape the reference" intuition, but introduces a multi-file-attribution policy question (drop blocks with mixed ignored + real attributions? keep them with reduced weight?) and couples ignore-list changes to baseline drift. Rejected on calibration-stability grounds: ignore-list edits should hide files, not reshape scores of files that survive.
+
+- *Filter at score stage* — set ignored files' scores to zero rather than dropping them. Same statistical effect as presentation-layer filtering but slower and adds a special-case branch in scoring code. No advantage; rejected on simplicity.
+
+**Pin:** `test_filter_does_not_affect_baselines` in `tests/test_report.py`. Constructs two corpora differing only by an Edit on an ignored path (`.env`) plus its thinking block. Asserts (a) the ignored path is absent from `report.files`, and (b) `corpus_baseline.markers_per_100w.n_blocks` reflects the ignored block (i.e. the filter did *not* leak upstream of baseline computation). Leg (b) is the structural tripwire: if a future change moves filtering into `_interesting_files`, the parser, or attribution, baseline stops counting ignored-path thinking and (b) fails.
+
+**Reversibility:** if a future corpus shows that block-level filtering materially changes rankings of real files (i.e., ignored files' thinking is dominating the baseline in a way that washes out real signal), the upgrade path is block-level: add a "block excluded from baseline if all attributions are ignored" rule in `compute_corpus_baseline`, keep the file-level presentation filter unchanged. Cost: one new policy decision (mixed-attribution blocks), one new test. Not prefactored; the property is not currently observed.
+
+---
+
 ## Discipline
 
 Add entries when a reasonable alternative existed and one was picked for reasons worth remembering. Not every decision logs here — only ones where the reader-later would reasonably ask "why not the other way?" and the answer is substantive.

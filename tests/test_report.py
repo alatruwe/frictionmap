@@ -382,6 +382,162 @@ def test_session_titles_empty_when_sessions_dir_omitted(tmp_path: Path) -> None:
     assert report.session_titles == {}
 
 
+def test_ignored_git_internals_filtered_out(tmp_path: Path) -> None:
+    # /proj/.git/refs/heads/main: Edit-touched so the loc=0 filter
+    # doesn't independently explain the drop. The .git/ pattern must
+    # be what filters it.
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/.git/refs/heads/main",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan(tmp_path)
+    paths = {f.path for f in report.files}
+    assert "/proj/.git/refs/heads/main" not in paths
+
+
+def test_ignored_pycache_filtered_out(tmp_path: Path) -> None:
+    # Both __pycache__/ dir pattern and *.pyc glob must drop their targets.
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/src/__pycache__/foo.cpython-311.pyc",
+                       "old_string": "a", "new_string": "b"}},
+            {"type": "tool_use", "id": "t2", "name": "Edit",
+             "input": {"file_path": "/proj/loose.pyc",
+                       "old_string": "c", "new_string": "d"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan(tmp_path)
+    paths = {f.path for f in report.files}
+    assert "/proj/src/__pycache__/foo.cpython-311.pyc" not in paths
+    assert "/proj/loose.pyc" not in paths
+
+
+def test_ignored_node_modules_filtered_out(tmp_path: Path) -> None:
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/node_modules/lodash/index.js",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan(tmp_path)
+    paths = {f.path for f in report.files}
+    assert "/proj/node_modules/lodash/index.js" not in paths
+
+
+def test_ignored_claude_plans_filtered_out(tmp_path: Path) -> None:
+    # Use Edit (not Write) so the loc=0 filter doesn't independently
+    # explain the drop — the .claude/ pattern must do it.
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/Users/x/.claude/plans/foo.md",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan(tmp_path)
+    paths = {f.path for f in report.files}
+    assert "/Users/x/.claude/plans/foo.md" not in paths
+
+
+def test_ignored_env_file_filtered_out(tmp_path: Path) -> None:
+    # Bare .env via exact-basename match; .env.production via .env.* glob.
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/.env",
+                       "old_string": "a", "new_string": "b"}},
+            {"type": "tool_use", "id": "t2", "name": "Edit",
+             "input": {"file_path": "/proj/.env.production",
+                       "old_string": "c", "new_string": "d"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan(tmp_path)
+    paths = {f.path for f in report.files}
+    assert "/proj/.env" not in paths
+    assert "/proj/.env.production" not in paths
+
+
+def test_ignored_ds_store_filtered_out(tmp_path: Path) -> None:
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/.DS_Store",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan(tmp_path)
+    paths = {f.path for f in report.files}
+    assert "/proj/.DS_Store" not in paths
+
+
+def test_real_source_file_not_filtered(tmp_path: Path) -> None:
+    # Negative control: a normal source path under scripts/ must survive.
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/scripts/foo.py",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan(tmp_path)
+    paths = {f.path for f in report.files}
+    assert "/proj/scripts/foo.py" in paths
+
+
+def test_filter_does_not_affect_baselines(tmp_path: Path) -> None:
+    # Tripwire: the filter must be presentation-layer-only. Adding an
+    # ignored file (with thinking content that would shift baselines)
+    # must not change report.baselines.corpus.markers_per_100w.
+    base_dir = tmp_path / "a"
+    base_dir.mkdir()
+    extended_dir = tmp_path / "b"
+    extended_dir.mkdir()
+
+    base_records = [
+        assistant("s1", "u1", [
+            {"type": "thinking",
+             "thinking": "Looking at /proj/foo.py — wait, actually let me reconsider."},
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/foo.py",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(base_dir / "s.jsonl", base_records)
+
+    extended_records = base_records + [
+        assistant("s2", "u1", [
+            {"type": "thinking",
+             "thinking": "About /proj/.env — wait, hmm, actually let me reconsider this carefully."},
+            {"type": "tool_use", "id": "t2", "name": "Edit",
+             "input": {"file_path": "/proj/.env",
+                       "old_string": "x", "new_string": "y"}},
+        ]),
+    ]
+    jsonl(extended_dir / "s.jsonl", extended_records)
+
+    _, base_report = _scan(base_dir)
+    _, extended_report = _scan(extended_dir)
+    base_bs = base_report.baselines.corpus.markers_per_100w
+    ext_bs = extended_report.baselines.corpus.markers_per_100w
+    assert ext_bs.n_blocks > base_bs.n_blocks  # sanity: ignored file's block IS in baseline
+    # But the filter is presentation-only — extended report still drops .env from files.
+    extended_paths = {f.path for f in extended_report.files}
+    assert "/proj/.env" not in extended_paths
+    assert "/proj/foo.py" in extended_paths
+
+
 def test_model_distribution_unknown_bucket_counts_only_assistant_like(tmp_path: Path) -> None:
     """Assistant events without a model field count toward unknown.
     user events and user-role agent_progress events do not."""

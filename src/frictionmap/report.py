@@ -7,6 +7,7 @@ score_components, baselines) are emitted as zero/empty scaffolds; Phase
 """
 from __future__ import annotations
 
+import fnmatch
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +29,45 @@ from frictionmap.events import (
     ToolUsage,
 )
 from frictionmap.scoring import compute_block_signals, score_corpus
+
+
+IGNORE_PATTERNS: tuple[str, ...] = (
+    ".git/",
+    "__pycache__/",
+    "*.pyc",
+    "node_modules/",
+    ".venv/",
+    "venv/",
+    "dist/",
+    "build/",
+    ".next/",
+    ".cache/",
+    ".claude/",
+    ".env",
+    ".env.*",
+    ".DS_Store",
+)
+
+
+def _is_ignored(canonical_path: str) -> bool:
+    """Return True if `canonical_path` matches any built-in noise pattern.
+
+    Patterns are gitignore-flavored: trailing-slash patterns match if the
+    segment appears anywhere in the path; glob patterns match the basename;
+    bare names match the basename exactly.
+    """
+    basename = Path(canonical_path).name
+    for pattern in IGNORE_PATTERNS:
+        if pattern.endswith("/"):
+            if f"/{pattern}" in canonical_path or canonical_path.startswith(pattern):
+                return True
+        elif "*" in pattern or "?" in pattern:
+            if fnmatch.fnmatch(basename, pattern):
+                return True
+        else:
+            if basename == pattern:
+                return True
+    return False
 
 
 def assemble_report(
@@ -56,6 +96,8 @@ def assemble_report(
 
     files: list[FileFriction] = []
     for path in sorted(interesting_files):
+        if _is_ignored(path):
+            continue
         complexity = compute_file_complexity(path)
         leakage = corpus.leakage_by_file.get(path, LeakageCounts())
         tool_usage = corpus.tool_usage_by_file.get(path, ToolUsage())
