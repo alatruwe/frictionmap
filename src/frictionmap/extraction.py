@@ -13,8 +13,12 @@ _PATH_SUFFIXES = (
 
 _SUFFIX_ALT = "|".join(_PATH_SUFFIXES)
 # Shell metacharacters + brackets. Brackets show up in prose ("[file.py]")
-# and will otherwise bleed into extracted tokens.
-_EXCL = r"\s'\"`;|&<>$()[\]{}"
+# and will otherwise bleed into extracted tokens. `*` and `?` are added so
+# glob patterns (`*.py`, `**embeddings.py`) and `gh pr create` markdown
+# bold (`**DEPLOYMENT.md`) don't survive as tokens. `:` is added so
+# leading-colon artifacts (`:.claude/settings.json`) and URL host:port
+# fragments (`localhost:8000`) terminate the run cleanly.
+_EXCL = r"\s'\"`;|&<>$()[\]{}*?:"
 
 # Two branches:
 #   (a) starts with '/', './', or '../' — token run of non-metachar chars.
@@ -28,6 +32,18 @@ _FILE_TOKEN_RE = re.compile(
 )
 
 _TRAILING_TRASH = ",;:"
+
+# Bash-command text routinely contains arithmetic (`(duration_seconds %
+# 86400)/3600`), system-binary paths (`/usr/bin/curl`, `/dev/null`), and
+# scratch-file paths under /tmp — all of which the regex above happily
+# turns into tokens. These filters apply ONLY in the Bash branch of
+# extract_file_paths; Read/Edit/Write `file_path` and Grep/Glob result
+# parsing are unaffected because they don't carry these artifacts.
+_BASH_SYSTEM_PREFIXES = (
+    "/usr/", "/bin/", "/sbin/", "/etc/", "/var/", "/tmp/",
+    "/sys/", "/proc/", "/dev/",
+    "/private/var/", "/private/tmp/", "/private/etc/",
+)
 
 # Grep output format: "<path>:<linenum>:<content>" for matches and
 # "<path>-<linenum>-<content>" for -C context lines. Anchored to line
@@ -57,10 +73,47 @@ def _strip_token(tok: str) -> str:
     return tok.rstrip(_TRAILING_TRASH)
 
 
+def _is_url_artifact(tok: str) -> bool:
+    """Reject URL tails. The regex matches `//host/path` after the `://`
+    of `https://host/path`, producing a token that starts with `//`. Real
+    POSIX paths starting with `//` are vanishingly rare and not worth
+    distinguishing here.
+    """
+    return tok.startswith("//") or "://" in tok
+
+
 def _scan_string(s: str) -> list[str]:
     if not s:
         return []
-    return [t for t in (_strip_token(m) for m in _FILE_TOKEN_RE.findall(s)) if t]
+    out: list[str] = []
+    for raw in _FILE_TOKEN_RE.findall(s):
+        tok = _strip_token(raw)
+        if not tok or _is_url_artifact(tok):
+            continue
+        out.append(tok)
+    return out
+
+
+def _is_bash_numeric_only(tok: str) -> bool:
+    """True when the final non-empty path segment has no alphabetic char.
+    Catches arithmetic literals like /3600.0, /1000.0, /60, /2 from SQL
+    or shell math that the regex picks up as paths.
+    """
+    segments = [s for s in tok.split("/") if s]
+    if not segments:
+        return False
+    return not any(c.isalpha() for c in segments[-1])
+
+
+def _is_bash_system_path(tok: str) -> bool:
+    return any(tok.startswith(p) for p in _BASH_SYSTEM_PREFIXES)
+
+
+def _filter_bash_paths(paths: list[str]) -> list[str]:
+    return [
+        p for p in paths
+        if not _is_bash_system_path(p) and not _is_bash_numeric_only(p)
+    ]
 
 
 def _extract_grep_result(text: str) -> list[str]:
@@ -155,7 +208,7 @@ def extract_file_paths(
         desc = tool_input.get("description")
         if isinstance(desc, str):
             paths.extend(_scan_string(desc))
-        return _dedup(paths)
+        return _dedup(_filter_bash_paths(paths))
 
     if tool_name == "Agent":
         # Sub-agent file touches live in `progress` events; the parser's

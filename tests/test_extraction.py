@@ -150,3 +150,98 @@ def test_grep_result_with_dict_content():
     paths = extract_file_paths("Grep", {"path": "src"}, content)
     assert "src/x.py" in paths
     assert "src/y.py" in paths
+
+
+# Phantom-rejection regressions (Task #13). Each test uses a string from
+# (or representative of) the path_extractor_audit_*.txt diagnostic.
+
+def test_bash_rejects_url_fragment_https():
+    cmd = (
+        'curl -s "https://registry.hub.docker.com/v2/repositories/ollama/ollama/tags/0.20.3" '
+        '2>/dev/null | head -5'
+    )
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert not any("hub.docker.com" in p for p in paths)
+    assert not any(p.startswith("//") for p in paths)
+    assert not any("://" in p for p in paths)
+
+
+def test_bash_rejects_url_fragment_localhost_with_port():
+    cmd = "curl -s http://localhost:11434/api/tokenize -d '{\"model\":\"x\"}'"
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert not any(p.startswith("//") for p in paths)
+    assert not any("://" in p for p in paths)
+
+
+def test_bash_rejects_numeric_literal_from_arithmetic():
+    # Real attune phantom: SQL arithmetic `(duration_seconds % 86400)/3600`
+    # extracts /3600 as a path-shaped token.
+    cmd = 'sqlite3 db "SELECT (duration_seconds % 86400)/3600 AS hrs FROM x"'
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert "/3600" not in paths
+    assert "/86400" not in paths
+
+
+def test_bash_rejects_numeric_literal_with_decimal():
+    cmd = "sleep 3600.0 && echo /1000.0 done"
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert "/3600.0" not in paths
+    assert "/1000.0" not in paths
+
+
+def test_bash_rejects_system_path_curl():
+    cmd = 'docker compose exec ollama sh -c "ls /usr/bin/curl 2>/dev/null"'
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert "/usr/bin/curl" not in paths
+
+
+def test_bash_rejects_dev_null_redirect():
+    cmd = "grep -n foo bar.py 2>/dev/null"
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert "/dev/null" not in paths
+    # Real path still extracted.
+    assert "bar.py" in paths
+
+
+def test_bash_rejects_tmp_scratch_path():
+    cmd = 'cp /tmp/settings_main.json .claude/settings.json'
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert not any(p.startswith("/tmp/") for p in paths)
+    assert ".claude/settings.json" in paths
+
+
+def test_bash_rejects_glob_star_pattern():
+    cmd = 'find /Users/me/proj -type f -name "*.py" -o -name "*.md"'
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert not any("*" in p for p in paths)
+
+
+def test_bash_strips_markdown_bold_to_real_filename():
+    # `gh pr create --body "**embeddings.py is broken**"` should yield
+    # the bare filename, not `**embeddings.py`.
+    cmd = 'gh pr create --body "rewrite **embeddings.py** to use new API"'
+    paths = extract_file_paths("Bash", {"command": cmd}, None)
+    assert "embeddings.py" in paths
+    assert not any("*" in p for p in paths)
+
+
+def test_read_keeps_system_path():
+    # The Bash-only filter must NOT touch Read.file_path. Real reads of
+    # /private/tmp/... session-task outputs (from sub-agents) appeared
+    # in the attune audit and must be preserved.
+    fp = "/private/tmp/claude-502/-Users-x-Projects-y/tasks/abc.output"
+    paths = extract_file_paths("Read", {"file_path": fp}, None)
+    assert paths == [fp]
+
+
+def test_grep_result_keeps_api_directory_path():
+    # The audit's classifier flagged `<cwd>/api/...` as URL — but real
+    # files under a top-level `api/` directory must survive extraction.
+    # This guards against any future tightening that confuses the two.
+    result = (
+        "/Users/me/proj/api/internal/views.py:10:def view():\n"
+        "/Users/me/proj/api/external/handler.py:7:    pass\n"
+    )
+    paths = extract_file_paths("Grep", {"pattern": "view"}, result)
+    assert "/Users/me/proj/api/internal/views.py" in paths
+    assert "/Users/me/proj/api/external/handler.py" in paths
