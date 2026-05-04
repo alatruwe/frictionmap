@@ -62,8 +62,8 @@ Session: 978c30c2 "Fix migration order in storage.py"
 Turns: 14 | Files touched: 3 | Thinking blocks: 5
 
 Top friction this session:
-  /path/to/storage.py       score 0.31 | 3 tool uses, 2 leakage events, 2 marker excerpts
-  /path/to/migrations.py    score 0.27 | 2 tool uses, 1 leakage events, 1 marker excerpts
+  /path/to/storage.py       score 0.31 | 2 marker excerpts
+  /path/to/migrations.py    score 0.27 | 1 marker excerpts
 ```
 
 ## Report views

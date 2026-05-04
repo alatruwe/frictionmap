@@ -37,6 +37,18 @@ def _other(session_id: str, uuid: str) -> dict:
     }
 
 
+def _last_prompt(session_id: str, prompt: str, uuid: str = "lp1") -> dict:
+    return {
+        "type": "last-prompt",
+        "sessionId": session_id,
+        "uuid": uuid,
+        "parentUuid": None,
+        "timestamp": "2026-04-22T00:00:02Z",
+        "cwd": "/proj",
+        "lastPrompt": prompt,
+    }
+
+
 def _write(path: Path, records: list[dict]) -> None:
     path.write_text(
         "\n".join(json.dumps(r) for r in records) + "\n",
@@ -145,6 +157,58 @@ def test_find_active_sessions_uses_aitTitle_field(tmp_path: Path) -> None:
     _set_mtime(path, hours_ago=1)
     sessions = find_active_sessions(tmp_path)
     assert sessions[0].title == "Real-shape title"
+
+
+def test_last_ai_title_uses_ai_title_when_present(tmp_path: Path) -> None:
+    # When both record types exist, ai-title wins over the last-prompt fallback.
+    path = tmp_path / "s.jsonl"
+    _write(path, [
+        _last_prompt("s", "Original opening prompt", uuid="lp1"),
+        _ai_title("s", "Auto-generated title", uuid="t1"),
+    ])
+    _set_mtime(path, hours_ago=1)
+    sessions = find_active_sessions(tmp_path)
+    assert sessions[0].title == "Auto-generated title"
+
+
+def test_last_ai_title_falls_back_to_first_last_prompt(tmp_path: Path) -> None:
+    # No ai-title record → use the FIRST last-prompt's first non-empty line.
+    path = tmp_path / "s.jsonl"
+    _write(path, [
+        _last_prompt("s", "First prompt\nsecond line", uuid="lp1"),
+        _last_prompt("s", "Second prompt", uuid="lp2"),
+    ])
+    _set_mtime(path, hours_ago=1)
+    sessions = find_active_sessions(tmp_path)
+    assert sessions[0].title == "First prompt"
+
+
+def test_last_ai_title_strips_markdown_heading_marker(tmp_path: Path) -> None:
+    path = tmp_path / "s.jsonl"
+    _write(path, [_last_prompt("s", "# Handoff: phase 5 cleanup")])
+    _set_mtime(path, hours_ago=1)
+    sessions = find_active_sessions(tmp_path)
+    assert sessions[0].title == "Handoff: phase 5 cleanup"
+
+
+def test_last_ai_title_truncates_long_last_prompt_to_60_chars(tmp_path: Path) -> None:
+    # 60 chars total INCLUDING the single Unicode … (U+2026); 59 content + 1 ellipsis.
+    path = tmp_path / "s.jsonl"
+    _write(path, [_last_prompt("s", "x" * 100)])
+    _set_mtime(path, hours_ago=1)
+    sessions = find_active_sessions(tmp_path)
+    title = sessions[0].title
+    assert len(title) == 60
+    assert title.endswith("…")
+    assert title == ("x" * 59) + "…"
+
+
+def test_last_ai_title_falls_back_to_untitled_when_neither_present(tmp_path: Path) -> None:
+    path = tmp_path / "s.jsonl"
+    _write(path, [_other("s", "u1")])
+    _set_mtime(path, hours_ago=1)
+    sessions = find_active_sessions(tmp_path)
+    assert sessions[0].title == "(untitled)"
 
 
 def test_format_relative_time() -> None:

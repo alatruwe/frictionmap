@@ -144,7 +144,7 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
     # Re-score against the chosen baseline (corpus cache or empty fallback).
     # Empty baseline yields z=0; we then rank by raw × weight as a fallback.
     file_scores = score_corpus(corpus, baseline)
-    ranked: list[tuple[float, object, int]] = []
+    ranked: list[tuple[float, object]] = []
     for f in report.files:
         result = file_scores.get(f.path)
         if cached is None:
@@ -165,11 +165,7 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
             score = score / max(f.loc, 1)
         else:
             score = result.score_pre_normalization / max(f.loc, 1) if result else 0.0
-        tool_total = (
-            f.tool_usage.read + f.tool_usage.edit + f.tool_usage.write
-            + f.tool_usage.bash + f.tool_usage.grep + f.tool_usage.glob
-        )
-        ranked.append((score, f, tool_total))
+        ranked.append((score, f))
     ranked.sort(key=lambda r: r[0], reverse=True)
 
     title = _last_ai_title(src_path)
@@ -190,18 +186,15 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
     if not ranked:
         lines.append("  (no signals)")
     else:
-        for score, f, tool_total in ranked[:5]:
-            summary = (
-                f"score {score:.3f} | {tool_total} tool uses, "
-                f"{f.leakage.total} leakage events, "
-                f"{len(f.excerpts)} marker excerpts"
-            )
+        for score, f in ranked[:5]:
+            summary = f"score {score:.3f} | {len(f.excerpts)} marker excerpts"
             lines.append(f"  {f.path}    {summary}")
     return "\n".join(lines)
 
 
 def _last_ai_title(path: Path) -> str:
-    title = "(untitled)"
+    ai_title_candidate: str | None = None
+    first_last_prompt: str | None = None
     try:
         with path.open("r", encoding="utf-8") as fh:
             for line in fh:
@@ -212,21 +205,49 @@ def _last_ai_title(path: Path) -> str:
                     record = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if record.get("type") != "ai-title":
-                    continue
-                # Claude Code's actual field is `aiTitle`. Older synthetic
-                # fixtures use `content`/`title`; try each defensively.
-                candidate = (
-                    record.get("aiTitle")
-                    or record.get("title")
-                    or record.get("content")
-                    or _nested_message_text(record)
-                )
-                if candidate:
-                    title = candidate.strip() or title
+                rtype = record.get("type")
+                if rtype == "ai-title":
+                    # Claude Code's actual field is `aiTitle`. Older synthetic
+                    # fixtures use `content`/`title`; try each defensively.
+                    candidate = (
+                        record.get("aiTitle")
+                        or record.get("title")
+                        or record.get("content")
+                        or _nested_message_text(record)
+                    )
+                    if candidate:
+                        stripped = candidate.strip()
+                        if stripped:
+                            ai_title_candidate = stripped
+                elif rtype == "last-prompt" and first_last_prompt is None:
+                    raw = record.get("lastPrompt")
+                    if isinstance(raw, str) and raw.strip():
+                        first_last_prompt = raw
     except OSError:
-        return title
-    return title
+        pass
+
+    if ai_title_candidate:
+        return ai_title_candidate
+    if first_last_prompt is not None:
+        return _format_prompt_fallback(first_last_prompt)
+    return "(untitled)"
+
+
+def _format_prompt_fallback(raw: str) -> str:
+    """First non-empty line, with a leading `# ` (atx-1) marker stripped, capped at 60 chars (incl. ellipsis).
+
+    Only `# ` is stripped, not `## ` / `### `. The observed handoff shape is `# Handoff: ...`;
+    deeper-level headings as the literal first line of a user prompt aren't a case we've seen.
+    """
+    first_line = next(
+        (ln.strip() for ln in raw.split("\n") if ln.strip()),
+        "",
+    )
+    if first_line.startswith("# "):
+        first_line = first_line[2:].lstrip()
+    if len(first_line) > 60:
+        return first_line[:59] + "…"
+    return first_line
 
 
 def _nested_message_text(record: dict) -> str | None:
