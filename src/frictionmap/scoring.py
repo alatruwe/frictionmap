@@ -157,9 +157,26 @@ def compute_edit_churn(corpus: Corpus) -> dict[str, int]:
 # bounded. The thinking_resolution_rate file-level aggregate (computed
 # from _BlockAgg.coupled_block_count / tangle_count) is still exposed
 # in the report payload, independently of this parked scoring path.
+#
+# block_length_words is parked at weight 0.0. The corpus baseline is
+# healthy (attune median=71/MAD=49, brownfield median=61/MAD=44.5),
+# but the per-file rollup of length-only top-15 is dominated by
+# attribution noise (URL fragments, bare directory paths, absolute
+# paths off the codebase root) and small-N evidence on both reference
+# corpora; the thick-evidence orthogonal candidates that exist (e.g.
+# CLAUDE.md at n=9, permissions/views at n=5) are mostly NOT in
+# production top-20, meaning length is surfacing files that markers +
+# behavioral signals correctly deprioritized. Section A's block-level
+# Pearson r flips negative on both_positive blocks (-0.175 attune,
+# -0.286 brownfield) — a denominator artifact (markers/100w is
+# intensity, length is size) but it confirms the signals aren't
+# redundant. Signal still computes (BlockSignals.length_words) and
+# aggregates (_BlockAgg.weighted_length); only the WEIGHTS multiplier
+# is zeroed. Reversibility: post-path-extractor fix re-evaluation, a
+# more diverse corpus, or Phase 7 session-detail use.
 WEIGHTS: dict[str, float] = {
     "markers": 0.25,
-    "block_length_words": 0.25 / 3,
+    "block_length_words": 0.0,
     "question_rate_per_100w": 0.0,
     "tool_use_coupling": 0.0,
     "reread_bursts": 0.25 / 3,

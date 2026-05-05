@@ -280,7 +280,9 @@ Known-type set is now: `assistant`, `user`, `file-history-snapshot`, `queue-oper
 
 ---
 
-### T2.6 — Structural signals correlate with perceived friction
+### T2.6 — Structural signals correlate with perceived friction ✅ CLOSED
+
+**Status (May 4, post Phase 5 #7):** of the 6 originally-listed structural signals, 3 were dropped during Phase 3 (root TTR, sentence length, length trend), 2 were parked during Phase 5 (`question_rate_per_100w` in #3, `tool_use_coupling` in #3a), and the last — `block_length_words` — is parked in #7. The structural-signals module is empty in v1 scoring; redefinition candidates (`bash_coupling_rate`, `investigative_coupling_rate`, others) carry to v2. Full chain in `block_length_words_parking_handoff.md`.
 
 **Assumption (new, surfaced April 20 from Attune review):** The structural signals ported from Attune — block length, question rate, root TTR, sentence length, tool-use coupling, length trend — correlate with friction enough to be worth including in the scoring function alongside marker detection.
 
