@@ -19,6 +19,8 @@ The edit churn window (`EDIT_CHURN_WINDOW = 5`) was retained after the same Phas
 
 Signals attribute to files via a **co-location rule**: a thinking-block file mention counts toward a file's score only if that file is also touched by a tool call in the same session. This separates *focus mentions* (code being worked on) from *recall mentions* (docs being consulted). Without this rule, the top-friction files are always your README, CLAUDE.md, and other files the model references constantly but doesn't struggle with. With it, the heatmap shows the code the model actually wrestles with.
 
+Tier 3's temporal-proximity window is fixed at `N=3` (validated against 40 boundary-sampled and 20 random-sampled hand-attributed blocks across attune and brownfield corpora). Wider windows (`N=5`, `N=10`) produce near-identical results in the regime where the algorithm's structural assumptions hold; the larger source of attribution error is structural — Tier 1 misses, Glob/Grep over-attribution, multi-target under-attribution, corpus-edge cases — not window size.
+
 ## Normalization
 
 Lexical signals use a presence/intensity split rather than standard z-score normalization, because re-evaluation markers are sparse-positive: 66% of attributed thinking blocks contain zero markers (measured identically on two unrelated corpora). A file's marker contribution is `(fraction of attributed blocks with any markers) × (mean rate among marker-bearing blocks)`. This is documented in `TRADEOFFS.md` as a permanent shape choice, sparse-positive signals need a different tool than dense-continuous ones.
