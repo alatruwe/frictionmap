@@ -51,7 +51,7 @@ This is fine and expected. Don't behave differently because of it — behave nor
 - **Standard library first.** No runtime dependencies added without a concrete reason. If you want to reach for a library, check whether stdlib covers it.
 - **Hatchling build backend.** Don't convert to setuptools unless there's a real incompatibility.
 - **Package name:** `ai_friction_map` (underscored, Python). **CLI command:** `ai-friction-map` (hyphenated, user-facing). Don't "fix" the inconsistency — Python requires it.
-- **No pushed branches yet.** All commits local until Adeline confirms GitHub setup.
+- **Remote:** `origin` is `github.com/alatruwe/frictionmap`. Push to `main` is fine when Adeline asks.
 - **Commit messages:** conventional-commit style (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`). One concern per commit.
 
 ## The north star
