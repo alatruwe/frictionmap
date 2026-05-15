@@ -265,9 +265,6 @@ function Header({ data, theme, setTheme }) {
 function ScoreBars({ components }) {
   const rows = [
     ["markers", components.markers],
-    ["block length", components.block_length_words],
-    ["question rate", components.question_rate_per_100w],
-    ["tool coupling", components.tool_use_coupling],
     ["reread bursts", components.reread_bursts],
     ["edit churn", components.edit_churn],
   ];
