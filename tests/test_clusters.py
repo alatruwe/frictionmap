@@ -51,7 +51,7 @@ def test_single_cluster_multiple_markers():
 
 
 def test_two_clusters_separated_by_long_gap():
-    filler = " ".join(["lorem"] * 150)
+    filler = " ".join(["lorem"] * 250)
     text = f"wait, that seems wrong. {filler} actually, now I see it"
     corpus = _mk_corpus_with_thinking(text)
     detect_excerpts(corpus)
@@ -80,7 +80,7 @@ def test_highlight_char_offsets_within_excerpt_text():
 
 
 def test_cluster_count_matches_across_siblings():
-    filler = " ".join(["word"] * 150)
+    filler = " ".join(["word"] * 250)
     text = f"wait here {filler} actually there {filler} hmm then"
     corpus = _mk_corpus_with_thinking(text)
     detect_excerpts(corpus)

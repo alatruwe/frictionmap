@@ -395,6 +395,12 @@ The implementation handoff for the markers reshape (separate session) does *not*
 
 ---
 
+### T2.12 — Cluster-gap N = 200 (was 100) ✅ TUNED + KNOWN LIMIT (May 15)
+
+Cluster-gap N = 200 (was 100), 2026-05-15. Two-corpus hand-tag (attune + brownfield, 20 boundary blocks). N=50 over-splits on both corpora (0/20 exact matches to hand-judged moment count). N=200 best-fits both. Known limit: `cluster_count` over-segments on long, high-marker blocks (≥~12 markers, continuous-interrogation debugging). "actually" fires as a discourse tic ("in fact"), not always re-evaluation, inflating marker count and fracturing single reasoning stretches at narrow N. N=200 chosen partly for robustness to this. No N value cleanly tracks hand-judged moments on the highest-marker blocks; this is a documented limit of word-gap clustering, not a pending task.
+
+---
+
 ## Tier 3 — Cosmetic, already handled, or punt to v2.
 
 ### T3.1 — Cache creation tokens as a friction signal

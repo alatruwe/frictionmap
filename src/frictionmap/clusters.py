@@ -10,7 +10,10 @@ import re
 
 from frictionmap.events import Corpus, Highlight, ThinkingExcerpt
 
-CLUSTER_GAP_WORDS = 100
+# N=200 chosen via two-corpus hand-tag (2026-05-15, attune + brownfield,
+# 20 boundary blocks); robust to "actually"-as-discourse-tic overcount.
+# See project_design/ASSUMPTIONS.md T2.12.
+CLUSTER_GAP_WORDS = 200
 EXCERPT_WORDS = 50
 
 # Empirically calibrated against the attune corpus (April 2026, 30-block
