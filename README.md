@@ -80,7 +80,6 @@ The report picks one of four modes based on what the data surfaces.
 ## Roadmap
 
 - **Milestone 2 — Debugger.** `frictionmap session <id>` gains a `session-<id>.html` output: turn-ordered timeline, marker-highlighted thinking-block reading view, files-touched filter.
-- **Milestone 3 — Skill.** Claude Code `/friction` skill wrapping both views, runnable from inside an active session.
 - **Multi-agent support.** Adapters for Codex, Aider, Cursor, and other agents. Driven by demand — open an issue if you'd use this on non-Claude sessions.
 
 ## Caveats
@@ -95,7 +94,3 @@ The `project_design/` folder also contains the design documents from the build: 
 ## License
 
 MIT.
-
----
-
-_Built with Claude Opus 4.7._
