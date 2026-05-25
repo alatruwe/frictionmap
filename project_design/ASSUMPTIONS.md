@@ -300,7 +300,9 @@ Compute structural signals per thinking block across the corpus. For each signal
 
 ---
 
-### T2.7 — Multi-file attribution cardinality ✅ MEASURED (new April 22, from 2B checkpoint)
+### T2.7 — Multi-file attribution cardinality ✅ CLOSED
+
+**Status (May 25, post Phase 5 #9):** equal-share (1/N) weighting validated via 30-block cross-corpus hand-tag (15 attune, 15 brownfield; stratified by split count). Both corpora cleared the pre-committed keep threshold (attune 11/15, brownfield 12/15); equal-share ships unchanged.
 
 **Assumption (new, implicit in schema 1.2 rollout):** The schema-1.2 shift from `Attribution.file_path: str | None` to `Attribution.file_paths: list[str]` preserves signal — thinking blocks that attribute to multiple files represent real multi-file reasoning, not attribution noise. A non-trivial fraction is expected; if every block ends up multi-file, the scoring function's per-file weighting becomes load-bearing.
 
