@@ -220,6 +220,26 @@ Three reasons in order of importance. *Calibration stability:* ignore-list edits
 
 ---
 
+## Attribution: co-location rule excludes thinking-only friction
+
+**Context:** The friction score attributes a thinking block to files via the co-location rule — files explicitly named in the block (Tier 1 exact path, Tier 2 unique basename within session-touched files) or, when the block names no file, files acted on by tool_use calls within ±N=3 events of the block's position. The rule was chosen for defensibility: every attribution traces to an exact match or a measurable temporal-proximity rule, not to interpretation. Phase 5 #11 cross-corpus calibration (May 25, 2026) surfaced a class of friction the rule cannot see: rhythm breaks that occur entirely inside thinking, with no tool_use in their proximity window and no file named in the block. Two attune sessions out of 13 (867b19ed, d9489e49) showed this shape; brownfield's 12-session sample did not produce the mode but cannot rule it out.
+
+**Decision:** Accept the gap. The co-location rule stays as-is; thinking-only friction is documented as a known unattributable case rather than a bug. Hand-adjudication confirms the rule produces empty attribution on these sessions, and that is the rule-compliant output — the tool surfaces nothing because there is nothing it can defensibly point at.
+
+**Rejected alternatives:**
+
+- *Widen the temporal-proximity window beyond ±N=3.* Larger windows attribute thinking to tool_use calls farther away in event time, which means attributing friction to files Claude was *also touching*, not files the friction is *about*. The mention-vs-attention decoupling already established in Phase 3b's marker work and reinforced by #8's cluster-gap finding says distance matters: events that aren't co-temporal aren't co-causal. Widening converts the gap into a false-attribution problem — the local failure mode shifts from "no signal where friction lives" to "wrong file where friction lives," which is worse.
+
+- *Synthesize an attribution from the thinking text itself via NLP or LLM-in-the-loop.* Resolves ambiguity at the cost of importing interpretation into the attribution path. Rejected on the same principle that drove the rejection of NLP mention resolution generally: every kept signal must be explainable in one sentence with no model in the loop.
+
+- *Attribute to all session-touched files as a fallback when no co-located file exists.* Spreads thinking-only friction across the whole session's file roster, destroying per-file granularity. Rejected for the same reason multi-file attribution uses 1/N rather than full credit: the alternative makes per-file scoring uninterpretable.
+
+**Pin:** No production test pins this directly — the rule's behavior on thinking-only blocks is to produce empty attribution, and the absence of attribution is the correct behavior, not a bug to test. The structural test that protects the calibration is the existing temporal-proximity boundary discipline in `tests/test_attribution.py`, which ensures the rule doesn't silently widen.
+
+**Reversibility:** If Phase 7 (per-session debugger) or v2 work produces a defensible way to attribute thinking-only friction — e.g., a sub-agent-aware attribution path that captures `<synthetic>` thinking the v1 pipeline misses, or a session-scoped fallback bucket distinct from per-file scoring — the rule can be extended without invalidating the current attribution. Cost: a new attribution category, a new test, a UI affordance for "session-level friction without file home." Not prefactored; the property surfaced on 2/13 attune sessions and 0/12 brownfield, below the threshold that justifies prefactoring.
+
+---
+
 ## Discipline
 
 Add entries when a reasonable alternative existed and one was picked for reasons worth remembering. Not every decision logs here — only ones where the reader-later would reasonably ask "why not the other way?" and the answer is substantive.
