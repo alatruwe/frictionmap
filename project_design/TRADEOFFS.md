@@ -77,7 +77,7 @@ Reasoning signals are the load-bearing input. Behavioral signals contribute only
 
 This also resolves a small-N noise mode that would otherwise need its own min-block-count threshold. A file with one attributed block, no markers, but a few re-reads scores zero under gating. Same file with one attributed block carrying re-evaluation markers scores honestly — the reasoning signal is what licenses the behavioral signal's contribution.
 
-**Mechanism (Phase 5 implementation):** the score function partitions contributions:
+**Mechanism:** the score function partitions contributions:
 
 ```
 reasoning_score = sum of contributions from markers, block_length, question_rate, tool_use_coupling
@@ -89,7 +89,7 @@ else:
     score = 0
 ```
 
-The exact shape of `gate()` is a Phase 5 calibration question — hard 0/1 step, sigmoid, `min(1.0, reasoning_score / threshold)`. The structural decision is that the gate exists; the calibration of its shape is tunable.
+The exact shape of `gate()` is a calibration question — hard 0/1 step, sigmoid, `min(1.0, reasoning_score / threshold)`. The structural decision is that the gate exists; the calibration of its shape is tunable.
 
 **Known limits:**
 
@@ -178,17 +178,17 @@ The temptation to reach for an LLM here is real and worth naming: it's faster th
 **Decision:** signals whose distributions are zero-mode with a positive tail (most blocks contain none of the signal, some blocks contain several) are normalized using a presence/intensity split, not robust z-score. File-level contribution = (fraction of attributed blocks containing any signal) × (mean rate among signal-bearing blocks). Continuous-around-a-center signals (block length, reasoning-to-output ratio) keep robust z-score. The two methods coexist in the scoring function; a signal's `BaselineStat.kind` discriminator picks which method runs.
 
 **Rejected alternatives:**
-- *Robust z-score for all signals.* The default until Phase 5. Collapses on sparse-positive signals because median = 0 and MAD = median(|x − 0|) = 0, producing division by zero and clamping every block's contribution to zero.
+- *Robust z-score for all signals.* The previous default. Collapses on sparse-positive signals because median = 0 and MAD = median(|x − 0|) = 0, producing division by zero and clamping every block's contribution to zero.
 - *Higher percentiles instead of MAD.* Replace the spread estimator with an interquartile range or p75 / p95 spread. Tested against the data: at 66% zero rate, p25 and p50 are both zero too. Doesn't help.
 - *Constant floor under MAD (`max(MAD, ε)`).* Cheap patch that lets z-scores compute. Produces extreme z-scores for any positive observation because the divisor is artificially tiny. Inverts what z-scoring is supposed to do.
 - *Threshold detector (drop the rate, count "above threshold or not").* Flattens intensity. Loses the information carried by the positive tail's spread.
-- *Drop the signal entirely.* Possible for individual signals (Phase 5 weight tuning may decide this for `question_rate_per_100w`), but not a general normalization fix.
+- *Drop the signal entirely.* Possible for individual signals (weight tuning may decide this for `question_rate_per_100w`), but not a general normalization fix.
 
 **Why:** measured on two corpora during the marker baseline reshape design session (April 27, 2026). On both attune (601 thinking blocks) and a brownfield codebase (466 thinking blocks), `markers_per_100w` showed exactly **66.1% zero rate** with a healthy positive tail (p25/p50/p75 of 0.60/1.07/1.47 on attune, 0.58/0.88/1.94 on brownfield among positives). The 66.1% match across two unrelated codebases is structural — a property of how Claude uses extended thinking, not a property of any one codebase. The shape is consistent and the positive tail has usable spread, which is exactly the case presence/intensity split was designed for.
 
 The presence/intensity split keeps both pieces of information: how often the signal fires on a file, and how intense it is when it fires. Both factors are bounded and interpretable in their own right (rate ∈ [0, 1], intensity in marker-rate units). The product is per-corpus comparable without needing baselines to compute. Per-corpus baselines still exist for context ("this corpus has 34% marker-bearing blocks; this file has 60% — unusually high") but the score doesn't divide by anything that can be zero.
 
-**Scope as shipped:** v1 implements presence/intensity split for `markers_per_100w` only. `question_rate_per_100w` is sparse-positive too (~7% positive rate on both corpora — much sparser than markers) but its scoring function role is deferred to Phase 5 weight tuning, which decides whether the signal earns its keep at all. Other signals with related shapes (`tool_use_coupling_rate`, `leakage_events_per_session`) are out of scope of this decision; they have their own distinct failure modes (the former is degenerate-low rather than zero-mode) and are addressed by separate Phase 5 tasks.
+**Scope as shipped:** v1 implements presence/intensity split for `markers_per_100w` only. `question_rate_per_100w` is sparse-positive too (~7% positive rate on both corpora — much sparser than markers) but its scoring function role is deferred to weight tuning, which decides whether the signal earns its keep at all. Other signals with related shapes (`tool_use_coupling_rate`, `leakage_events_per_session`) are out of scope of this decision; they have their own distinct failure modes (the former is degenerate-low rather than zero-mode) and are addressed by separate tasks.
 
 **Known limit:** the per-file mean intensity is computed over a small sample when a file has few attributed blocks. A file with 3 attributed blocks where 1 contains markers gives presence_rate = 0.33 and intensity = (whatever that one block's rate was). At small N, the intensity estimate is noisy. Mitigated structurally by the behavioral-gating rule (see "Signal set" above) — files without reasoning signal don't surface regardless of N — but small-N reasoning-signal-positive files can still rank with one or two attributed blocks. Observed once on attune: a single-block plan file (swift-mixing-thompson.md, N=1) promoted to rank 3 in calm mode under presence/intensity. Honest signal at small sample; documented in the README's known-limits section rather than thresholded out.
 
@@ -198,7 +198,7 @@ The presence/intensity split keeps both pieces of information: how often the sig
 
 ## Attribution noise filter: presentation-layer cut, not pipeline-stage filter
 
-**Decision:** the built-in `IGNORE_PATTERNS` filter (and Phase 5b's configurable extension) operates at FileFriction-assembly time only. Ignored paths participate normally in parsing, attribution, leakage detection, baseline computation, and per-file scoring. They are dropped when assembling `report.files`, not before.
+**Decision:** the built-in `IGNORE_PATTERNS` filter (and its configurable extension) operates at FileFriction-assembly time only. Ignored paths participate normally in parsing, attribution, leakage detection, baseline computation, and per-file scoring. They are dropped when assembling `report.files`, not before.
 
 **Why this and not pipeline-stage filtering:**
 
