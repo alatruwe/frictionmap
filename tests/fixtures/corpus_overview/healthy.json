@@ -6,7 +6,7 @@
     "thinking_block_count": 480,
     "total_event_count": 7200,
     "generated_at": "2026-04-27T14:00:00Z",
-    "schema_version": "1.3"
+    "schema_version": "1.4"
   },
   "baselines": {
     "corpus": {

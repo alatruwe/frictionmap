@@ -212,7 +212,7 @@ def test_report_has_empty_baselines_in_2c(tmp_path: Path) -> None:
     assert bs.low_confidence is True
 
 
-def test_schema_version_is_1_3(tmp_path: Path) -> None:
+def test_schema_version_is_1_4(tmp_path: Path) -> None:
     jsonl(tmp_path / "s.jsonl", [
         assistant("s1", "u1", [
             {"type": "tool_use", "id": "t1", "name": "Edit",
@@ -221,7 +221,7 @@ def test_schema_version_is_1_3(tmp_path: Path) -> None:
         ]),
     ])
     _, report = _scan(tmp_path)
-    assert report.meta.schema_version == "1.3"
+    assert report.meta.schema_version == "1.4"
     assert report.meta.name == "attune"
 
 

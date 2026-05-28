@@ -54,7 +54,7 @@ type CodebaseMeta = {
   thinking_block_count: number   // 607 (as of Apr 22 corpus)
   total_event_count: number      // 9,151 including progress events; feeds the header stat
   generated_at: string           // ISO 8601 timestamp
-  schema_version: string         // "1.3" — bump on breaking changes
+  schema_version: string         // "1.4" — bump on breaking changes
 }
 ```
 
@@ -419,6 +419,8 @@ These are properties of the attune corpus, not schema contracts. Captured here f
 
 ## Handoff status
 
-Schema 1.3 stable. `BaselineStat` discriminated union ships in Phase 5; `markers_per_100w` is the sole signal on the presence/intensity branch.
+Schema 1.4 stable. `BaselineStat` discriminated union ships in Phase 5; `markers_per_100w` is the sole signal on the presence/intensity branch.
 
-If a real parser or UI implementation decision forces another structural change, bump `schema_version` to 1.4 and note the change in the version history above.
+1.3 → 1.4 changes the source of the top-level `FileFriction.score` field: it is now the raw weighted z-sum (`score_pre_normalization`), not `score_pre / max(loc, 1)`. The LOC-normalized value remains available at `score_components.normalized_by_loc` as a future secondary lens. Driver: the May 26–28 score-axis diagnostic showed LOC normalization produced an empty-state UI on the attune corpus and mis-ranked brownfield top files; raw z-sum cleared both failure modes. See `~/score_axis_findings.md`.
+
+If a real parser or UI implementation decision forces another structural change, bump `schema_version` to 1.5 and note the change here.

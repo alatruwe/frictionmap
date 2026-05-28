@@ -550,6 +550,7 @@ function fricColor(score, max = 1) {
 function StandoutsStrip({ standouts, totalScore, selectedPath, onSelect }) {
   if (!standouts || standouts.length === 0) return null;
   const standoutTotal = standouts.reduce((s, f) => s + f.score, 0);
+  const standoutMax = Math.max(...standouts.map(f => f.score), 0.001);
   const sharePct = Math.round((standoutTotal / totalScore) * 100);
 
   return (
@@ -568,13 +569,13 @@ function StandoutsStrip({ standouts, totalScore, selectedPath, onSelect }) {
               key={f.path}
               className={`standout-card ${sel ? "selected" : ""}`}
               onClick={() => onSelect(f.path)}
-              style={{ borderLeftColor: fricColor(f.score) }}
+              style={{ borderLeftColor: fricColor(f.score, standoutMax) }}
             >
               <div className="standout-name" title={f.path}>{f.name}</div>
               <div className="standout-score-row">
                 <span className="standout-score">{f.score.toFixed(2)}</span>
                 <span className="standout-bar">
-                  <span style={{ width: `${Math.min(100, f.score * 100)}%`, background: fricColor(f.score) }} />
+                  <span style={{ width: `${Math.min(100, Math.max(0, (f.score / standoutMax) * 100))}%`, background: fricColor(f.score, standoutMax) }} />
                 </span>
               </div>
               <div className="standout-meta">

@@ -32,15 +32,24 @@ Separate from `ASSUMPTIONS.md` (properties of the data, tested) and `PROJECT_DES
 
 ---
 
-## Scoring normalization: per-file scores divided by file size
+## Scoring normalization: headline is raw weighted z-sum; per-LOC retained as a secondary lens
 
-**Decision:** raw friction signal per file is normalized by file size (LOC or char count) before ranking.
+**Decision (schema 1.4):** the top-level `FileFriction.score` field — the value the UI ranks, treemaps, colors, and gates against `FRICTION_FLOOR` — sources from the raw weighted z-sum (`score_pre_normalization`). The LOC-normalized value is still computed and emitted at `score_components.normalized_by_loc` as a future "friction density" secondary lens, but is no longer the headline.
 
-**Rejected alternative:** rank by raw aggregate signal.
+**Rejected alternative (the pre-1.4 default):** divide by `max(loc, 1)` before ranking, framed as "friction per unit of code."
 
-**Why:** without normalization, large files dominate rankings purely because there's more code to touch. A 2,000-line file Claude reads once ranks above a 50-line file Claude wrestles with three times. Normalization surfaces *per-unit-of-code* friction, which is what the signal is meant to capture.
+**Why the swap:** the May 26–28 score-axis diagnostic showed LOC normalization failing on both reference corpora.
 
-**Known limit:** extremely small files with a single friction incident can rank disproportionately high. Threshold on minimum file size (or minimum event count per file) handles this in the scoring function.
+- **attune empty-state.** Under LOC normalization, `attune_floor_clear = 0`. A corpus with real friction signal renders as empty mode because dividing by LOC compresses every per-file score below the 0.10 floor. The UI's "Map" tab disappears on a corpus that demonstrably has friction to show.
+- **brownfield mis-ranking.** The manual LOC sidecar surfaced high-friction files like `test_oauth.py` (n=24 sessions) sinking under LOC normalization, while files with `loc=0` on the home machine (`middleware.py`, `pat_views.py` — files Claude touched but that aren't checked out locally) floated to the top via the degenerate `/ max(loc, 1) == / 1` division.
+
+Both halves of the cross-corpus check point at the raw z-sum as the right headline. Decision rule fired outcome 2 (axis swap) cleanly. The diagnostic, sidecar, and findings are preserved outside the repo at `~/score_axis_findings.md`, `~/score_axis_findings_pre_sidecar.md`, `~/score_axis_loc_sidecar_provenance.md`.
+
+**The original concern still stands** — large files should not dominate purely by surface area. The raw z-sum is robust to that mode because file size enters via the per-signal robust z-scores (markers per-100-words, question rate per-100-words, presence/intensity normalization) before the weighted sum, not via post-hoc division. A 2,000-line file with one friction incident produces small z-scores on per-rate signals; the score doesn't balloon.
+
+**`FRICTION_FLOOR = 0.10` stayed at 0.10 across the swap.** The threshold value happens to sit at the right "meaningful-friction" cutoff for both axes on our two reference corpora — a happy coincidence, not a derived equivalence. What changed is the axis the gate operates on, not the gate value. Per-corpus floor calibration is the single-corpus-fitting failure mode and was not done. If a future corpus shows the 0.10 floor lands wrong under the new axis, re-derivation is in scope for a separate task.
+
+**Known limit:** the per-LOC lens is no longer surfaced in the v1 UI. A future "friction density" toggle would read `f.score_components.normalized_by_loc` and reorder accordingly; the data is on the schema waiting.
 
 ---
 

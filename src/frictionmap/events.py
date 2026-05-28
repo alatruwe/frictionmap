@@ -240,7 +240,7 @@ class CodebaseMeta:
     thinking_block_count: int
     total_event_count: int
     generated_at: str
-    schema_version: str = "1.2"
+    schema_version: str = "1.4"
     model_distribution: ModelDistribution = field(default_factory=ModelDistribution)
 
 

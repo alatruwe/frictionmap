@@ -136,7 +136,7 @@ def assemble_report(
             path=path,
             name=path_obj.name,
             directory=str(path_obj.parent) + "/",
-            score=components.normalized_by_loc,
+            score=score_pre,
             tangle_count=tangle_count,
             thinking_resolution_rate=thinking_resolution_rate,
             session_count=len(sessions_by_file.get(path, set())),
@@ -157,7 +157,7 @@ def assemble_report(
         thinking_block_count=_count_thinking_blocks(corpus),
         total_event_count=corpus.event_count,
         generated_at=datetime.now(timezone.utc).isoformat(),
-        schema_version="1.3",
+        schema_version="1.4",
         model_distribution=_count_models(corpus),
     )
 
