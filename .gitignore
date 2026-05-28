@@ -30,6 +30,9 @@ env/
 *.swo
 *~
 
+# Claude Code local settings (per-machine permissions, env, hooks)
+.claude/
+
 # Project artifacts
 report.html
 
