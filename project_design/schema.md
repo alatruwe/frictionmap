@@ -100,7 +100,7 @@ type BaselineStat =
 
 **Median + MAD, not mean + SD** (robust_z branch). Robust to outliers. A single 5,000-word thinking block would otherwise drag the mean and distort every z-score downstream.
 
-**Presence/intensity** (1.3) is the branch for sparse-positive signals where the median is zero on most realistic corpora — currently `markers_per_100w` and only `markers_per_100w`. `presence_rate_corpus` and `median_intensity_among_positives` are corpus-level context for a future evidence panel ("this corpus has 34% marker-bearing blocks; this file has 60%"); they are **not** divisors in the per-file score. The per-file scorer computes `presence_rate_F × mean_intensity_F` directly from the file's attributed blocks. Other signals retain the robust_z branch even when sparse — `question_rate_per_100w` is sparse-positive (~93% zero rate) but its scoring weight is currently zero, deferred to Phase 5 weight tuning.
+**Presence/intensity** (1.3) is the branch for sparse-positive signals where the median is zero on most realistic corpora — currently `markers_per_100w` and only `markers_per_100w`. `presence_rate_corpus` and `median_intensity_among_positives` are corpus-level context for a future evidence panel ("this corpus has 34% marker-bearing blocks; this file has 60%"); they are **not** divisors in the per-file score. The per-file scorer computes `presence_rate_F × mean_intensity_F` directly from the file's attributed blocks. Other signals retain the robust_z branch even when sparse — `question_rate_per_100w` is sparse-positive (~93% zero rate) but its scoring weight is zero — parked in #3 (see the parking handoffs).
 
 **Session baselines live at the top level**, keyed by `session_id`:
 
@@ -160,7 +160,7 @@ type ScoreComponents = {
   // primary signal
   markers: SignalValue              // re-evaluation markers per 100w
 
-  // structural signals (trimmed set per IMPLEMENTATION.md Phase 3)
+  // structural signals — all parked at weight=0 in v1 (computed + emitted, not scored)
   block_length_words:     SignalValue
   question_rate_per_100w: SignalValue
   tool_use_coupling:      SignalValue

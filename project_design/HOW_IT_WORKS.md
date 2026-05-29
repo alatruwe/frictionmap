@@ -3,7 +3,7 @@
 
 ## The signal set
 
-Three classes of signal, all extracted by counting (no semantic interpretation). Every signal can be explained in one sentence and reproduces deterministically across runs.
+Three classes of signal, all extracted by counting (no semantic interpretation). Every signal can be explained in one sentence and reproduces deterministically across runs. Within these classes, v1 scores on markers, re-read bursts, and edit churn; the remaining signals are computed and emitted but parked at weight=0 (see "Currently parked signals" below).
 
 **Lexical.** Re-evaluation markers in extended thinking blocks. Calibrated 13-marker lexicon: `actually`, `wait`, `hmm`, `no,`, `let me reconsider`, `on second thought`, `scratch that`, `hold on`, `reconsidering`, `i was wrong`, `let me think`, `now I'm realizing`, `however`. Calibrated on a 30-block hand-tagged sample (100% recall, 42% precision; drove the `but` / `let me check` → `let me think` / `however` swap), then validated at corpus scale across attune + brownfield with a stratified hand-tagged sample (4 hits per marker per corpus, 64 hits actual after rare-marker under-sampling). The post-swap lexicon was retained unchanged; `actually` is corpus-dependent (4/4 precision on brownfield, 0/4 on attune) and kept on a recall-favoring calibration rather than dropped on the per-corpus disagreement override.
 

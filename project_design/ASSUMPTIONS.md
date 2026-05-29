@@ -370,6 +370,8 @@ The 66.1% match across two unrelated codebases is structural, not coincidental �
 
 ### T2.11 — Question rate is sparser than markers (~7% vs 34% positive corpus-wide) ✅ MEASURED (new April 27, from same design session)
 
+**Status (post Phase 5 #3):** question rate parked at weight=0 — orthogonal at block level but per-file candidates dominated by attribution-noise + small-N. See `question_rate_per_100w_parking_handoff.md`. (Original verdict below preserved as the point-in-time record.)
+
 **Assumption (carried in from Phase 3b's "lexicon swap collapsed markers, possibly other signals too" finding):** `question_rate_per_100w` shares the sparse-positive shape with `markers_per_100w`, and the same presence/intensity normalization fits.
 
 **Why it matters:** if the shapes are similar, one design decision covers both signals. If question rate is meaningfully sparser, the presence/intensity formula technically still works but the signal will fire on fewer files — possibly so few that the signal contributes negligibly and shouldn't be in the scoring function at all.

@@ -69,8 +69,8 @@ Both halves of the cross-corpus check point at the raw z-sum as the right headli
 
 **Decision:** the score function distinguishes two signal classes:
 
-- **Reasoning signals** — re-evaluation markers in thinking blocks, block length, question rate, tool-use coupling. These measure friction *as Claude experienced it in the moment.*
-- **Behavioral signals** — re-read bursts, edit churn, leakage events (Edit failures, Bash retries, Grep reformulations, Read-after-Edit). These measure *patterns of activity* that correlate with friction but can also reflect ordinary work.
+- **Reasoning signals** — re-evaluation markers in thinking blocks, block length, question rate, tool-use coupling. These measure friction *as Claude experienced it in the moment.* (As of Phase 5, markers is the only reasoning signal carrying weight in v1 — block length, question rate, tool-use coupling parked at weight=0.)
+- **Behavioral signals** — re-read bursts, edit churn, leakage events (Edit failures, Bash retries, Grep reformulations, Read-after-Edit). These measure *patterns of activity* that correlate with friction but can also reflect ordinary work. (Leakage parked at weight=0 since #2b; reread + churn carry weight.)
 
 Reasoning signals are the load-bearing input. Behavioral signals contribute only when reasoning signals also fire on the same file. A file with high edit churn and no marker activity is work, not friction; its score does not surface it as a friction surface.
 
@@ -100,6 +100,8 @@ else:
 
 The exact shape of `gate()` is a calibration question — hard 0/1 step, sigmoid, `min(1.0, reasoning_score / threshold)`. The structural decision is that the gate exists; the calibration of its shape is tunable.
 
+v1 weights: of the reasoning signals only markers is non-zero; of the behavioral signals only reread_bursts and edit_churn. The partition and gate are unchanged — parked signals sit in the sum at weight=0. The mechanism is structural; the weights are calibration.
+
 **Known limits:**
 
 - *Files where Claude struggled but didn't externalize it in thinking* are under-scored. Acceptable: this is the same trade-off the co-location rule makes. Friction has to leave a trace to be measured.
@@ -119,6 +121,18 @@ The exact shape of `gate()` is a calibration question — hard 0/1 step, sigmoid
 **Why (user corrections):** classifying user messages by corrective intent is a small NLP task. A regex list produces false positives ("no" in "no problem") and misses polite corrections ("actually, could we..."). The effort to do it reliably is out of scope.
 
 **Known limit:** user-correction signal, if done well, would be valuable. v2 territory.
+
+---
+
+## Parked structural signals: the original hypothesis didn't survive corpus diagnostics
+
+**Decision:** the structural-signals module contributes nothing to v1 scoring. Markers + reread + churn are the only scored signals.
+
+**Why:** per-file rollups of block length / question rate / tool-use coupling are dominated by attribution-noise + small-N; corpus baselines are healthy, so the failure is downstream at the per-file level, not in normalization. `tool_use_coupling` additionally saturates at 97–99% pooled coupling, collapsing opposite-sign stratum effects.
+
+Parked, not patched — each is reversible by zeroing back in (the field still computes/emits; only the `WEIGHTS` multiplier is 0). This is the methodology working, not a shortfall: the signals were tested and didn't earn weight at v1.
+
+See the parking handoffs (`question_rate_per_100w_parking_handoff.md`, `bash_coupling_rate_parking_handoff.md`, `block_length_words_parking_handoff.md`).
 
 ---
 
@@ -197,7 +211,7 @@ The temptation to reach for an LLM here is real and worth naming: it's faster th
 
 The presence/intensity split keeps both pieces of information: how often the signal fires on a file, and how intense it is when it fires. Both factors are bounded and interpretable in their own right (rate ∈ [0, 1], intensity in marker-rate units). The product is per-corpus comparable without needing baselines to compute. Per-corpus baselines still exist for context ("this corpus has 34% marker-bearing blocks; this file has 60% — unusually high") but the score doesn't divide by anything that can be zero.
 
-**Scope as shipped:** v1 implements presence/intensity split for `markers_per_100w` only. `question_rate_per_100w` is sparse-positive too (~7% positive rate on both corpora — much sparser than markers) but its scoring function role is deferred to weight tuning, which decides whether the signal earns its keep at all. Other signals with related shapes (`tool_use_coupling_rate`, `leakage_events_per_session`) are out of scope of this decision; they have their own distinct failure modes (the former is degenerate-low rather than zero-mode) and are addressed by separate tasks.
+**Scope as shipped:** v1 implements presence/intensity split for `markers_per_100w` only. `question_rate_per_100w` is sparse-positive too (~7% positive rate on both corpora — much sparser than markers) but it is parked at weight=0 (decided in #3; see the parking handoffs). Other signals with related shapes (`tool_use_coupling_rate`, `leakage_events_per_session`) are out of scope of this decision; they have their own distinct failure modes (the former is degenerate-low rather than zero-mode) and are addressed by separate tasks.
 
 **Known limit:** the per-file mean intensity is computed over a small sample when a file has few attributed blocks. A file with 3 attributed blocks where 1 contains markers gives presence_rate = 0.33 and intensity = (whatever that one block's rate was). At small N, the intensity estimate is noisy. Mitigated structurally by the behavioral-gating rule (see "Signal set" above) — files without reasoning signal don't surface regardless of N — but small-N reasoning-signal-positive files can still rank with one or two attributed blocks. Observed once on attune: a single-block plan file (swift-mixing-thompson.md, N=1) promoted to rank 3 in calm mode under presence/intensity. Honest signal at small sample; documented in the README's known-limits section rather than thresholded out.
 

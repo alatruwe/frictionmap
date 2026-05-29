@@ -43,14 +43,14 @@ Claude Code writes rich JSONL session data to `~/.claude/projects/<project>/*.js
 
 ### Friction score — the signal set
 
-The scoring function combines lexical signals, behavioral signals, and structural signals. Every signal is per-file attributed using the co-location rule (see §Attribution below).
+The v1 scoring function ranks on three signals: re-evaluation markers (lexical), re-read bursts, and edit churn (behavioral). Structural signals (block length, question rate, tool-use coupling) and the leakage cluster are still computed and emitted in the report payload, but are parked at weight=0 — corpus-level diagnostics didn't bear them out as per-file friction signal at v1 (see TRADEOFFS.md → "Parked structural signals"). Every signal is per-file attributed using the co-location rule (see §Attribution below).
 
 **Primary signal — re-evaluation markers in thinking blocks:**
 Lexical markers detected inside thinking blocks, code-fence-stripped before matching. Calibrated 13-marker lexicon (post-Phase-3b):
 
 `actually`, `wait`, `hmm`, `no,`, `let me reconsider`, `on second thought`, `scratch that`, `hold on`, `reconsidering`, `i was wrong`, `let me think`, `now I'm realizing`, `however`
 
-(Initial lexicon swapped two markers in Phase 3b: dropped `but` and `let me check` for low precision, added `let me think` and `however`. Lexicon validation continues at corpus scale in Phase 5.)
+(Initial lexicon swapped two markers in Phase 3b: dropped `but` and `let me check` for low precision, added `let me think` and `however`. Phase 5 lexicon validation (#4) confirmed the post-swap lexicon at corpus scale.)
 
 **Per-file aggregation uses presence/intensity split, not robust z-score.** File-level marker contribution = (fraction of attributed blocks containing any markers) × (mean `markers_per_100w` among marker-bearing blocks). Decided after the marker baseline reshape design session (April 27, 2026); see TRADEOFFS.md for the rationale and rejected alternatives. The shape: `markers_per_100w` is sparse-positive (66.1% zero rate corpus-wide, measured on two unrelated codebases), so the standard robust z-score normalization that other signals use collapses to division by zero. Presence/intensity split keeps both information channels — how often markers fire on a file, and how dense they are when they do — without needing a non-zero baseline spread to function.
 
@@ -59,9 +59,12 @@ This is the differentiator of the product. The marker-highlight view in the repo
 **Cluster structure within blocks (schema 1.1):** markers inside a single thinking block may form one coherent cluster or multiple distant clusters. A 1,240-word block with "Wait" / "Actually" near the top and "Hmm" / "Hold on" / "Let me reconsider" 600 words later is two clusters — a different shape of friction than a single dense cluster of equivalent marker count. The parser emits one excerpt per cluster, and the scoring function weights multi-cluster blocks above single-cluster blocks of equivalent total marker density.
 
 **Structural signals per thinking block** (adapted from Attune's structural-signals review):
+
+*v1 status: parked.* All three are computed and emitted at weight=0 — the per-file rollup hypothesis didn't hold at v1 (baselines healthy; the failure is downstream at per-file attribution). Parked, not patched; redefinition candidates carry to v2. See the parking handoffs (`question_rate_per_100w_parking_handoff.md`, `bash_coupling_rate_parking_handoff.md`, `block_length_words_parking_handoff.md`).
+
 - `block_length_chars` and `block_length_words` — long blocks concentrate where the task is hard
-- `question_rate_per_100w` — self-questioning as a proxy for uncertainty; code-stripped, normalized. **Sparse-positive at ~7% corpus-level positive rate (vs 34% for markers); contribution to scoring deferred to Phase 5 weight tuning, which decides whether the signal earns its keep. If kept, will use the same presence/intensity split as markers.**
-- `tool_use_coupling` — did this thinking block resolve into a tool call within N events? (inverse also informative: high-reasoning/low-action sessions are design mode)
+- `question_rate_per_100w` — self-questioning as a proxy for uncertainty; code-stripped, normalized. **Parked at weight=0 in #3 — orthogonal to markers at block level, but per-file candidates dominated by attribution-noise + small-N. See `question_rate_per_100w_parking_handoff.md`.**
+- `tool_use_coupling` **(parked #3a)** — did this thinking block resolve into a tool call within N events? (inverse also informative: high-reasoning/low-action sessions are design mode)
 
 *Dropped from the plan:* root TTR, avg sentence length, length trend. Low signal on Claude text or redundant with block length.
 
