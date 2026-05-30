@@ -44,9 +44,7 @@ Tier 1 tests were gating — run Monday April 20 before parser code. All passed 
 
 Without co-location filtering, the heatmap would show "your docs are the gnarliest code." Co-location is the difference between a useful product and a confused one.
 
-**2B re-measurement (April 22, post-attribution):** the real attribution layer is *stronger* than T1.1 measured. Tier 1 (exact-path with `/`-boundary suffix match) alone attributes 61% of thinking blocks — 61% > 46% because T1.1 counted raw file-reference presence, while 2B's attribution applies the stronger boundary-respecting suffix rule and catches every unique-basename case as a Tier 1 match. Tier 2 (unique_basename) is architecturally subsumed — it never fires because every unique basename is already a `/`-boundary suffix. Tier 3 (temporal proximity) covers the remaining 39%. **The 46% target from T1.1 no longer applies; the new baseline is 61% Tier 1 / 39% Tier 3.** Attribution coverage is better than initially measured.
-
-**Architectural consequence (flagged for Phase 3 cleanup):** Tier 2 can be removed from the conceptual model in documentation. The schema field stays (don't bump again just for this) but the three-tier story becomes a two-tier story in prose.
+**2B re-measurement (April 22, post-attribution; corrected May 29 post-C2-fix):** Tier 1 attributes thinking blocks via path-*fragment* suffix matching (suffixes containing a `/`); bare basenames fall through to Tier 2 (unique_basename), which attributes when the basename is unique in the session. Post-fix the tiers split, on attune (601 blocks), 12% exact_path / 33% unique_basename / 55% temporal_proximity, and on brownfield (466 blocks), 12% / 5% / 84%. **The 46% target from T1.1 no longer applies.** _The original 2B note recorded "61% Tier 1 / 0% Tier 2 / 39% Tier 3" and concluded Tier 2 was "architecturally subsumed." That was an artifact of the C2 bug: Tier 1 also matched bare basenames, over-claiming every same-basename file and pre-empting Tier 2's uniqueness guard so it could never fire. With Tier 1 correctly gated to fragments, Tier 2 fires routinely and is the dominant non-temporal tier on attune._
 
 ---
 
@@ -449,7 +447,7 @@ Findings that reshaped the design:
 6. **Sub-agents in this corpus don't emit thinking blocks.** (T1.5 follow-up)
 7. **Canonical scoring-validation session `a70658da` has zero progress events** despite being the heaviest by event count.
 8. **`system/compact_boundary` handling is correct but rarely-exercised on attune.** (T1.6)
-9. **Tier 2 attribution (`unique_basename`) is architecturally subsumed by Tier 1.** (T1.1 re-measurement)
+9. ~~**Tier 2 attribution (`unique_basename`) is architecturally subsumed by Tier 1.**~~ (T1.1 re-measurement) — **VERDICT REVERSED (May 29, C2 fix).** This was false, caused by the C2 bug: Tier 1 matched bare basenames, over-claiming and pre-empting Tier 2's uniqueness guard so it never fired. With Tier 1 gated to path fragments, **Tier 2 fires routinely** (33% of attributed blocks on attune, 5% on brownfield). The "two-tier story in prose" cleanup that followed from this assumption is withdrawn.
 10. **Multi-file attribution is real: 41% of attributed blocks touch 2+ files, 26% touch 3+.** (T2.7)
 11. **Schema surface fully resolved.** (T2.3)
 12. **Structural signals from Attune port cleanly** to thinking blocks. (T2.6, tested in Phase 5.)
