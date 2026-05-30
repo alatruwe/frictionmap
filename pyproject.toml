@@ -13,10 +13,24 @@ authors = [{ name = "Adeline Latruwe" }]
 dependencies = ["radon>=6.0,<7"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10"]
+dev = ["pytest>=8,<10", "ruff==0.15.15"]
 
 [project.scripts]
 "frictionmap" = "frictionmap.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/frictionmap"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Real but tiny findings in src/; off-limits this task (C2 collision boundary).
+# Drop these once the C2 branch (or a follow-up) cleans them up.
+"src/frictionmap/leakage.py" = ["F401"]  # unused `Block` import
+"src/frictionmap/report.py" = ["I001"]   # import-block ordering
+# Import nits in tests; advisory until a later cleanup pass.
+"tests/**" = ["F401", "I001"]

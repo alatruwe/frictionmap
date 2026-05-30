@@ -1,5 +1,7 @@
 # FrictionMap
 
+[![CI](https://github.com/alatruwe/frictionmap/actions/workflows/ci.yml/badge.svg)](https://github.com/alatruwe/frictionmap/actions/workflows/ci.yml)
+
 **File-level observability for AI coding sessions.**
 
 FrictionMap parses AI coding session logs and produces a self-contained interactive HTML report ranking every file in a codebase by how much friction the model experienced working with it — measured by re-evaluation patterns in extended thinking, retry behavior, and edit churn.
