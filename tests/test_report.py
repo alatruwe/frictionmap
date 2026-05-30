@@ -545,3 +545,167 @@ def test_model_distribution_unknown_bucket_counts_only_assistant_like(tmp_path: 
     assert md.events_by_model == {}
     assert md.sessions_by_model == {}
     assert md.unknown_model_event_count == 1
+
+
+# --- Phase 5b: user-managed ignore -------------------------------------------
+
+import pathspec  # noqa: E402
+
+from frictionmap.report import (  # noqa: E402
+    build_user_ignore,
+    count_likely_noise_in_top,
+    find_ignore_file,
+)
+
+
+def _scan_with_ignore(tmp_path: Path, user_ignore) -> tuple:
+    corpus = parse_sessions(tmp_path)
+    report = assemble_report(
+        corpus,
+        sessions_dir_name="-Users-x-Projects-attune",
+        user_ignore=user_ignore,
+    )
+    return corpus, report
+
+
+def test_find_ignore_file_walks_up_to_nearest(tmp_path: Path) -> None:
+    # An ancestor holds .frictionmap-ignore; a deeper CWD must find it.
+    (tmp_path / ".frictionmap-ignore").write_text("*.lock\n", encoding="utf-8")
+    nested = tmp_path / "a" / "b" / "c"
+    nested.mkdir(parents=True)
+    found = find_ignore_file(nested)
+    assert found == tmp_path / ".frictionmap-ignore"
+    # And it parses into a working spec.
+    spec = build_user_ignore(found, [])
+    assert spec is not None and spec.match_file("/proj/poetry.lock")
+
+
+def test_find_ignore_file_nearest_wins(tmp_path: Path) -> None:
+    # Both an ancestor and a deeper dir have one; the deeper (nearest) wins.
+    (tmp_path / ".frictionmap-ignore").write_text("far.py\n", encoding="utf-8")
+    nested = tmp_path / "a" / "b"
+    nested.mkdir(parents=True)
+    (nested / ".frictionmap-ignore").write_text("near.py\n", encoding="utf-8")
+    assert find_ignore_file(nested) == nested / ".frictionmap-ignore"
+
+
+def test_find_ignore_file_returns_none_when_absent(tmp_path: Path) -> None:
+    assert find_ignore_file(tmp_path) is None
+
+
+def test_flag_patterns_stack_with_file_patterns(tmp_path: Path) -> None:
+    # File contributes a.py; flag contributes b.py. Both must drop, while a
+    # built-in default (.git/) still drops too.
+    ignore_file = tmp_path / ".frictionmap-ignore"
+    ignore_file.write_text("a.py\n", encoding="utf-8")
+    user_ignore = build_user_ignore(ignore_file, ["b.py"])
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/a.py", "old_string": "a", "new_string": "b"}},
+            {"type": "tool_use", "id": "t2", "name": "Edit",
+             "input": {"file_path": "/proj/b.py", "old_string": "c", "new_string": "d"}},
+            {"type": "tool_use", "id": "t3", "name": "Edit",
+             "input": {"file_path": "/proj/keep.py", "old_string": "e", "new_string": "f"}},
+            {"type": "tool_use", "id": "t4", "name": "Edit",
+             "input": {"file_path": "/proj/.git/HEAD", "old_string": "g", "new_string": "h"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan_with_ignore(tmp_path, user_ignore)
+    paths = {f.path for f in report.files}
+    assert "/proj/a.py" not in paths   # from file
+    assert "/proj/b.py" not in paths   # from flag
+    assert "/proj/.git/HEAD" not in paths  # default still applies
+    assert "/proj/keep.py" in paths    # unmatched survives
+
+
+def test_user_patterns_do_not_replace_defaults(tmp_path: Path) -> None:
+    # A .frictionmap-ignore that does NOT list .git/ — the default must still
+    # hide it (user patterns add, never replace).
+    ignore_file = tmp_path / ".frictionmap-ignore"
+    ignore_file.write_text("something_else.py\n", encoding="utf-8")
+    user_ignore = build_user_ignore(ignore_file, [])
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/.git/refs/heads/main",
+                       "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan_with_ignore(tmp_path, user_ignore)
+    paths = {f.path for f in report.files}
+    assert "/proj/.git/refs/heads/main" not in paths
+
+
+def test_user_ignore_does_not_affect_baselines(tmp_path: Path) -> None:
+    # Sibling to test_filter_does_not_affect_baselines, for USER patterns.
+    # Two corpora differ only by an Edit + thinking block on generated.py.
+    # The extended run ignores generated.py via a user pattern. Assert BOTH:
+    # (a) generated.py absent from report.files, and (b) the ignored block
+    # STILL counts in the corpus baseline (n_blocks rises). Leg (b) is the
+    # tripwire: it fails if user filtering ever moves upstream of baseline
+    # computation.
+    base_dir = tmp_path / "a"
+    base_dir.mkdir()
+    extended_dir = tmp_path / "b"
+    extended_dir.mkdir()
+
+    base_records = [
+        assistant("s1", "u1", [
+            {"type": "thinking",
+             "thinking": "Looking at /proj/foo.py — wait, actually let me reconsider."},
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": "/proj/foo.py", "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(base_dir / "s.jsonl", base_records)
+
+    extended_records = base_records + [
+        assistant("s2", "u1", [
+            {"type": "thinking",
+             "thinking": "About /proj/generated.py — wait, hmm, actually let me reconsider this carefully."},
+            {"type": "tool_use", "id": "t2", "name": "Edit",
+             "input": {"file_path": "/proj/generated.py", "old_string": "x", "new_string": "y"}},
+        ]),
+    ]
+    jsonl(extended_dir / "s.jsonl", extended_records)
+
+    user_ignore = pathspec.PathSpec.from_lines("gitwildmatch", ["generated.py"])
+    _, base_report = _scan_with_ignore(base_dir, user_ignore)
+    _, ext_report = _scan_with_ignore(extended_dir, user_ignore)
+
+    base_bs = base_report.baselines.corpus.markers_per_100w
+    ext_bs = ext_report.baselines.corpus.markers_per_100w
+    # Leg (b): the ignored block IS in the baseline.
+    assert ext_bs.n_blocks > base_bs.n_blocks
+    # Leg (a): but the user pattern hides it from the report.
+    ext_paths = {f.path for f in ext_report.files}
+    assert "/proj/generated.py" not in ext_paths
+    assert "/proj/foo.py" in ext_paths
+
+
+def _ff(path: str):
+    from frictionmap.events import FileFriction
+    return FileFriction(path=path, name=Path(path).name, directory=str(Path(path).parent) + "/")
+
+
+def test_count_likely_noise_fires_above_top_n_threshold() -> None:
+    files = [
+        _ff("/proj/poetry.lock"),
+        _ff("/proj/static/app.min.js"),
+        _ff("/proj/src/real.py"),
+    ]
+    assert count_likely_noise_in_top(files) == 2
+
+
+def test_count_likely_noise_silent_on_clean_top() -> None:
+    files = [_ff("/proj/src/a.py"), _ff("/proj/src/b.py")]
+    assert count_likely_noise_in_top(files) == 0
+
+
+def test_count_likely_noise_respects_top_n_window() -> None:
+    # Noise outside the top-n window is not counted.
+    files = [_ff("/proj/src/a.py"), _ff("/proj/poetry.lock")]
+    assert count_likely_noise_in_top(files, top_n=1) == 0

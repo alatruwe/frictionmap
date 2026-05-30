@@ -69,3 +69,80 @@ def test_scan_report_contains_counts(fake_home, tmp_path, monkeypatch):
     assert '"total_event_count": 3' in rendered
     assert '"schema_version": "1.4"' in rendered
     assert "{{DATA}}" not in rendered
+
+
+# --- Phase 5b: passive noise hint --------------------------------------------
+
+def _edit(tool_id: str, file_path: str) -> dict:
+    return {"type": "tool_use", "id": tool_id, "name": "Edit",
+            "input": {"file_path": file_path, "old_string": "a", "new_string": "b"}}
+
+
+def _assistant_session(uuid: str, edits: list[dict]) -> dict:
+    return {
+        "type": "assistant",
+        "sessionId": "s1",
+        "uuid": uuid,
+        "parentUuid": None,
+        "timestamp": "2026-04-22T00:00:00Z",
+        "cwd": "/proj",
+        "message": {"role": "assistant", "content": edits},
+    }
+
+
+def test_scan_emits_noise_hint_and_writes_no_ignore_file(fake_home, tmp_path, monkeypatch, capsys):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    sessions = _make_sessions_dir(fake_home, proj)
+    # Two Edit-touched noise files survive the loc==0 filter into the top-20.
+    records = [_assistant_session(
+        "u1",
+        [_edit("t1", "/proj/poetry.lock"), _edit("t2", "/proj/static/app.min.js")],
+    )]
+    (sessions / "s1.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8"
+    )
+
+    monkeypatch.chdir(proj)
+    assert main(["scan"]) == 0
+    out = capsys.readouterr().out
+    assert "match common generated/vendored patterns" in out
+    # The hint must not mutate the project dir.
+    assert not (proj / ".frictionmap-ignore").exists()
+
+
+def test_scan_silent_when_top_files_clean(fake_home, tmp_path, monkeypatch, capsys):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    sessions = _make_sessions_dir(fake_home, proj)
+    records = [_assistant_session(
+        "u1", [_edit("t1", "/proj/src/real.py"), _edit("t2", "/proj/src/other.py")],
+    )]
+    (sessions / "s1.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8"
+    )
+
+    monkeypatch.chdir(proj)
+    assert main(["scan"]) == 0
+    out = capsys.readouterr().out
+    assert "generated/vendored patterns" not in out
+
+
+def test_scan_ignore_flag_hides_path_for_one_run(fake_home, tmp_path, monkeypatch):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    sessions = _make_sessions_dir(fake_home, proj)
+    records = [_assistant_session(
+        "u1", [_edit("t1", "/proj/src/secret.py"), _edit("t2", "/proj/src/keep.py")],
+    )]
+    (sessions / "s1.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8"
+    )
+
+    monkeypatch.chdir(proj)
+    assert main(["scan", "--ignore", "secret.py"]) == 0
+    rendered = (proj / "report.html").read_text(encoding="utf-8")
+    assert "secret.py" not in rendered
+    assert "keep.py" in rendered
+    # One-off: no .frictionmap-ignore written.
+    assert not (proj / ".frictionmap-ignore").exists()
