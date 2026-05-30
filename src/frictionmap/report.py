@@ -25,6 +25,7 @@ from frictionmap.events import (
     LeakageCounts,
     ModelDistribution,
     Report,
+    SCHEMA_VERSION,
     ThinkingExcerpt,
     ToolUsage,
 )
@@ -157,7 +158,7 @@ def assemble_report(
         thinking_block_count=_count_thinking_blocks(corpus),
         total_event_count=corpus.event_count,
         generated_at=datetime.now(timezone.utc).isoformat(),
-        schema_version="1.4",
+        schema_version=SCHEMA_VERSION,
         model_distribution=_count_models(corpus),
     )
 

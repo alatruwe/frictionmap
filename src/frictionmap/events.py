@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+# Single source of truth for the report payload schema version. Bump here
+# only; CodebaseMeta.schema_version and report.assemble_report both read it.
+SCHEMA_VERSION = "1.4"
+
 
 @dataclass
 class Attribution:
@@ -240,7 +244,7 @@ class CodebaseMeta:
     thinking_block_count: int
     total_event_count: int
     generated_at: str
-    schema_version: str = "1.4"
+    schema_version: str = SCHEMA_VERSION
     model_distribution: ModelDistribution = field(default_factory=ModelDistribution)
 
 
