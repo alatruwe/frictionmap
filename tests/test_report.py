@@ -5,7 +5,7 @@ from pathlib import Path
 import json
 
 from frictionmap.parser import parse_sessions
-from frictionmap.report import _extract_codebase_name, assemble_report
+from frictionmap.report import assemble_report
 from tests._factories import assistant, jsonl, progress, user
 
 
@@ -183,14 +183,6 @@ def test_real_file_with_loc_kept_even_if_only_read(tmp_path: Path) -> None:
     _, report = _scan(tmp_path)
     paths = {f.path for f in report.files}
     assert str(real) in paths
-
-
-def test_codebase_meta_name_extracted_from_sessions_dir() -> None:
-    assert _extract_codebase_name("-Users-x-Projects-attune") == "attune"
-    assert _extract_codebase_name("-Users-x-Projects-my-cool-project") == "my-cool-project"
-    # Fallback: no -Projects- substring → last dash segment
-    assert _extract_codebase_name("-Users-x-foo") == "foo"
-    assert _extract_codebase_name("") == ""
 
 
 def test_report_has_empty_baselines_in_2c(tmp_path: Path) -> None:

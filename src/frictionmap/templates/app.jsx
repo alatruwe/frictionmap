@@ -203,17 +203,6 @@ function squarify(items, x, y, w, h) {
   return result;
 }
 
-// Trim an absolute path to project-relative by stripping everything up
-// through `/<codebaseName>/`. Returns the original path if the codebase
-// segment isn't present (e.g. files under ~/.claude/ touched in a session).
-function relativePath(path, codebaseName) {
-  if (!codebaseName) return path;
-  const marker = `/${codebaseName}/`;
-  const idx = path.indexOf(marker);
-  if (idx < 0) return path;
-  return path.slice(idx + marker.length);
-}
-
 function fmtNum(n) {
   if (n == null) return "–";
   if (Math.abs(n) >= 1) return Number(n).toFixed(2);
@@ -378,7 +367,7 @@ function ExcerptCard({ excerpt, currentPath, onJumpFile, density }) {
   );
 }
 
-function Evidence({ file, onJumpFile, density, codebaseName }) {
+function Evidence({ file, onJumpFile, density }) {
   if (!file) {
     return (
       <div className="evidence-empty">
@@ -392,7 +381,7 @@ function Evidence({ file, onJumpFile, density, codebaseName }) {
     <div>
       <div className="evidence-head">
         <div className="ev-name">{file.name}</div>
-        <div className="ev-path">{relativePath(file.path, codebaseName)}</div>
+        <div className="ev-path">{file.path}</div>
         <div className="ev-magnitude">
           <span className="num">{file.tangle_count}</span>
           <span className="lbl">tangles across <strong style={{ color: "var(--ink-body)" }}>{file.session_count}</strong> sessions · score <strong style={{ color: "var(--ink-body)" }}>{file.score.toFixed(3)}</strong></span>
@@ -438,7 +427,9 @@ function App() {
   useEffect(() => { applyPalette(tweaks.palette, theme); }, [tweaks.palette, theme]);
   useEffect(() => { applyAccent(tweaks.accent); }, [tweaks.accent]);
 
-  const [selectedPath, setSelectedPath] = useState("src/attune/core/storage.py");
+  // data.files ships score-sorted descending (report.py sorts before emit), so
+  // [0] is the top-friction file — the right default to open in Evidence.
+  const [selectedPath, setSelectedPath] = useState(data.files[0]?.path ?? null);
 
   const fileByPath = useMemo(() => {
     const m = new Map();
@@ -455,7 +446,7 @@ function App() {
         <CorpusOverview data={data} selectedPath={selectedPath} onSelect={setSelectedPath} />
 
         <aside className="panel evidence">
-          <Evidence file={selectedFile} onJumpFile={setSelectedPath} density={tweaks.excerptDensity} codebaseName={data.meta.name} />
+          <Evidence file={selectedFile} onJumpFile={setSelectedPath} density={tweaks.excerptDensity} />
         </aside>
       </div>
     </div>
