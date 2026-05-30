@@ -51,7 +51,8 @@ This is fine and expected. Don't behave differently because of it — behave nor
 - **Standard library first.** No runtime dependencies added without a concrete reason. If you want to reach for a library, check whether stdlib covers it.
 - **Hatchling build backend.** Don't convert to setuptools unless there's a real incompatibility.
 - **Package name:** `ai_friction_map` (underscored, Python). **CLI command:** `ai-friction-map` (hyphenated, user-facing). Don't "fix" the inconsistency — Python requires it.
-- **Remote:** `origin` is `github.com/alatruwe/frictionmap`. Push to `main` is fine when Adeline asks.
+- **Remote:** `origin` is `github.com/alatruwe/frictionmap`.
+- **Branch + PR for everything.** All changes go on a new branch and ship as a pull request for review — never commit or push directly to `main`. Name the branch for the work (`fix-...`, `docs-...`, etc.), commit there, push, and open a PR against `main`. This holds even for small or doc-only changes.
 - **Commit messages:** conventional-commit style (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`). One concern per commit.
 
 ## The north star

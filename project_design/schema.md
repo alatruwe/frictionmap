@@ -310,8 +310,8 @@ type Attribution = {
 
 **Multi-file semantics (1.2).** Every tier can produce multiple paths:
 
-- `exact_path` with multiple paths: the thinking text contains `/`-boundary suffix matches for multiple session-touched files (e.g. mentions both `storage.py` and `logger.py`).
-- `unique_basename` with multiple paths: the thinking text contains multiple bare filenames that each uniquely resolve to one session file. **In practice this tier never fires** — every unique basename is also a `/`-boundary suffix, so the `exact_path` branch catches it first. Tier kept in schema for backward compat; never observed on attune.
+- `exact_path` with multiple paths: the thinking text contains path-fragment suffix matches (suffixes containing a `/`, e.g. `core/storage.py`) for multiple session-touched files.
+- `unique_basename` with multiple paths: the thinking text contains multiple bare filenames that each uniquely resolve to one session file. Tier 1 matches only path-*fragment* suffixes (those containing a `/`), so a bare filename like `storage.py` falls through to this tier, where it attributes iff its basename is unique in the session. This tier fires routinely — 33% of attributed blocks on attune, 5% on brownfield.
 - `temporal_proximity` with multiple paths: the nearest tool_use within N events touches multiple files (Grep scope resolving to several matched files, or a Bash command mentioning multiple files). The block attributes to all of them.
 
 **Three tiers, not four.** IMPLEMENTATION.md Phase 2 defines four resolution tiers: exact path, unique basename, ambiguous basename (falls through), no filename (falls through). Tiers 3 and 4 both resolve via temporal proximity, so the schema collapses them into a single `"temporal_proximity"` label. Signal over verbosity — a consumer wanting to distinguish "had a filename but ambiguous" from "no filename at all" is operating below the scoring function's resolution.
@@ -411,7 +411,7 @@ Neither open question blocks parser or UI work.
 
 These are properties of the attune corpus, not schema contracts. Captured here for UI designers and Phase 3 scoring:
 
-- **Attribution tier distribution (607 thinking blocks):** 61% exact_path, 0% unique_basename (architecturally subsumed), 39% temporal_proximity. The original T1.1 target of ~46% lexical match no longer applies — the new Tier 1 with `/`-boundary suffix matching is stronger.
+- **Attribution tier distribution (post-C2-fix, May 29):** Tier 1 is gated to path-*fragment* suffixes (must contain a `/`); bare basenames resolve at Tier 2. attune (601 blocks): 12% exact_path, 33% unique_basename, 55% temporal_proximity. brownfield (466 blocks): 12% exact_path, 5% unique_basename, 84% temporal_proximity. _Pre-fix, the buggy Tier 1 matched bare basenames too and read 59/0/41 on attune (the "61/0/39" recorded here before the fix), 34/0/66 on brownfield — `unique_basename` could never fire because Tier 1 pre-empted its uniqueness guard. The original T1.1 target of ~46% lexical match no longer applies._
 - **Attribution cardinality:** 12.7% unattributed (empty list), 46.1% one file, 15.2% two files, 26.0% three-plus. Multi-file attribution is real; scoring must handle it.
 - **Agent-sourced work:** walker emits 75 tool_use, 75 tool_result, 6 text blocks corpus-wide — zero thinking blocks. `ThinkingExcerpt.agent_sourced` is always false on this corpus.
 - **Cluster counts:** 10.7% of marker-bearing blocks are multi-cluster. Distribution healthy; cluster-gap-N tuning waits for Phase 3's production marker regex.
