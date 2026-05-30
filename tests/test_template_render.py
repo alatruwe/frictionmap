@@ -47,6 +47,40 @@ def test_render_inlines_data_and_titles():
     assert data["session_titles"]["abcd1234"] == "demo title"
 
 
+def test_render_escapes_script_close_in_data():
+    """A session-derived string containing "</script>" must not close the
+    inline <script> early. The "<" is escaped to its \\u003c JSON form, so
+    the raw token never appears inside the data payload, yet the value
+    round-trips losslessly through json.loads.
+    """
+    meta = CodebaseMeta(
+        name="proj",
+        session_count=1,
+        file_count=1,
+        thinking_block_count=1,
+        total_event_count=1,
+        generated_at="2026-04-26T00:00:00+00:00",
+    )
+    nasty = "fix the </script> tag bug"
+    f = FileFriction(path="src/a.py", name="a.py", directory="src/")
+    report = Report(meta=meta, files=[f], session_titles={"abcd1234": nasty})
+
+    template, app_jsx, styles_css = load_template_assets()
+    rendered = render_report(report, template, app_jsx, styles_css)
+
+    # The data payloads must not carry a raw "</script>".
+    data_match = re.search(r"window\.FRICTION_DATA = (\{.*?\});", rendered, re.DOTALL)
+    titles_match = re.search(r"window\.SESSION_TITLES = (\{.*?\});", rendered, re.DOTALL)
+    assert data_match is not None and titles_match is not None
+    assert "</script>" not in data_match.group(1)
+    assert "</script>" not in titles_match.group(1)
+
+    # ...but the value survives a JSON round-trip unchanged.
+    assert json.loads(titles_match.group(1))["abcd1234"] == nasty
+    # ...and the document still parses as HTML.
+    HTMLParser().feed(rendered)
+
+
 def test_render_has_no_sibling_file_loads():
     template, app_jsx, styles_css = load_template_assets()
     rendered = render_report(_minimal_report(), template, app_jsx, styles_css)

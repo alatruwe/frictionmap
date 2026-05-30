@@ -30,8 +30,12 @@ def render_report(report: Report, template: str, app_jsx: str, styles_css: str) 
     the JSX could legally contain those literal strings (it doesn't), so
     inline {{DATA}}/{{SESSION_TITLES}} first to avoid that surface.
     """
-    data_json = json.dumps(asdict(report), default=str)
-    titles_json = json.dumps(report.session_titles)
+    # Both payloads are interpolated into an inline <script>; json.dumps does
+    # not escape "</script>" or "<", so any session-derived text containing
+    # "</script>" (common in web-dev sessions) would close the tag early and
+    # blank the report. Escape "<" to its < form — valid JSON, inert HTML.
+    data_json = json.dumps(asdict(report), default=str).replace("<", "\\u003c")
+    titles_json = json.dumps(report.session_titles).replace("<", "\\u003c")
     return (
         template
         .replace("{{DATA}}", data_json)
