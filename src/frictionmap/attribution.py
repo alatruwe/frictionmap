@@ -26,7 +26,7 @@ def attribute_thinking_blocks(
     proximity_n: int = _DEFAULT_PROXIMITY_N,
 ) -> None:
     for events in corpus.sessions.values():
-        canonical_paths, basename_to_paths = _session_path_index(events)
+        tier1_patterns, basename_to_paths = _session_path_index(events)
         for ev_idx, event in enumerate(events):
             for block in event.blocks:
                 if block.type != "thinking" or not block.thinking:
@@ -35,7 +35,7 @@ def attribute_thinking_blocks(
                     block.thinking,
                     events,
                     ev_idx,
-                    canonical_paths,
+                    tier1_patterns,
                     basename_to_paths,
                     proximity_n,
                 )
@@ -43,58 +43,83 @@ def attribute_thinking_blocks(
 
 def _session_path_index(
     events: list[ParsedEvent],
-) -> tuple[set[str], dict[str, set[str]]]:
+) -> tuple[list[tuple[str, re.Pattern[str]]], dict[str, set[str]]]:
+    """Build the per-session lookups used by attribution.
+
+    Returns `(tier1_patterns, basename_to_paths)`:
+    - `tier1_patterns` — one compiled regex per canonical path, over that
+      path's path-fragment suffixes (those containing `/`). Compiled once per
+      session and reused across every block, rather than re-escaping suffixes
+      per (block × path × suffix).
+    - `basename_to_paths` — bare basename → set of canonical paths, for Tier 2.
+    """
     canonical_paths: set[str] = set()
     for event in events:
         for block in event.blocks:
             for p in block.file_paths:
                 canonical_paths.add(p)
+    tier1_patterns: list[tuple[str, re.Pattern[str]]] = []
+    for p in sorted(canonical_paths):
+        pattern = _tier1_pattern(p)
+        if pattern is not None:
+            tier1_patterns.append((p, pattern))
     basename_to_paths: dict[str, set[str]] = {}
     for p in canonical_paths:
         base = p.rsplit("/", 1)[-1] if "/" in p else p
         basename_to_paths.setdefault(base, set()).add(p)
-    return canonical_paths, basename_to_paths
+    return tier1_patterns, basename_to_paths
 
 
 def _path_suffixes(canonical_path: str) -> list[str]:
-    """All `/`-boundary-aligned suffixes of a canonical path, longest first.
+    """Path-fragment suffixes of a canonical path (those containing a `/`),
+    longest first.
 
-    E.g. `/a/b/c.py` → `['/a/b/c.py', 'a/b/c.py', 'b/c.py', 'c.py']`.
+    E.g. `/a/b/c.py` → `['/a/b/c.py', 'a/b/c.py', 'b/c.py']`. The bare
+    basename (`c.py`) is deliberately excluded: matching it would attribute
+    every same-basename file in the session at Tier 1, pre-empting Tier 2's
+    uniqueness guard. Bare-basename mentions are resolved by Tier 2 instead.
     """
     out: list[str] = []
     parts = canonical_path.split("/")
-    # Full absolute path (includes leading slash if present).
+    # Full path (includes leading slash if present), then each `/`-aligned
+    # suffix down to (but excluding) the bare basename.
     out.append(canonical_path)
-    # Suffixes starting at each subsequent part.
-    for i in range(1, len(parts)):
+    for i in range(1, len(parts) - 1):
         suffix = "/".join(parts[i:])
         if suffix and suffix not in out:
             out.append(suffix)
-    return out
+    return [s for s in out if "/" in s]
+
+
+def _tier1_pattern(canonical_path: str) -> re.Pattern[str] | None:
+    """Compile one boundary-anchored alternation over a path's fragment
+    suffixes. Returns None if the path has no `/`-containing suffix (e.g. a
+    bare basename), which can then only attribute via Tier 2/3.
+
+    Boundaries exclude `-` as well as word chars (`(?<![\\w-]) … (?![\\w-])`)
+    so `logger.py` does not match `/proj/my_logger.py` and `my-storage.py`
+    does not match canonical `storage.py`.
+    """
+    suffixes = _path_suffixes(canonical_path)
+    if not suffixes:
+        return None
+    alt = "|".join(re.escape(s) for s in suffixes)
+    return re.compile(rf"(?<![\w-])(?:{alt})(?![\w-])")
 
 
 def _tier1_exact_path(
     thinking: str,
-    canonical_paths: set[str],
+    tier1_patterns: list[tuple[str, re.Pattern[str]]],
 ) -> list[str]:
-    """Return every canonical path with at least one `/`-boundary suffix
-    present in the thinking text. Suffix must appear at a word boundary
-    (not preceded/followed by a word char) so `logger.py` does NOT match
-    canonical `/proj/my_logger.py`. Schema 1.2: multiple matched paths
-    are all returned.
+    """Return every canonical path with at least one path-fragment suffix
+    (containing `/`) present in the thinking text, at a non-word, non-`-`
+    boundary. Schema 1.2: multiple matched paths are all returned.
     """
     matched: list[str] = []
-    for path in canonical_paths:
-        for suffix in _path_suffixes(path):
-            if _suffix_present(thinking, suffix):
-                matched.append(path)
-                break
+    for path, pattern in tier1_patterns:
+        if pattern.search(thinking):
+            matched.append(path)
     return matched
-
-
-def _suffix_present(text: str, suffix: str) -> bool:
-    pattern = rf"(?<!\w){re.escape(suffix)}(?!\w)"
-    return re.search(pattern, text) is not None
 
 
 def _tier2_unique_basename(
@@ -145,11 +170,11 @@ def _attribute_one(
     thinking: str,
     events: list[ParsedEvent],
     ev_idx: int,
-    canonical_paths: set[str],
+    tier1_patterns: list[tuple[str, re.Pattern[str]]],
     basename_to_paths: dict[str, set[str]],
     proximity_n: int,
 ) -> Attribution:
-    t1 = _tier1_exact_path(thinking, canonical_paths)
+    t1 = _tier1_exact_path(thinking, tier1_patterns)
     if t1:
         return Attribution(tier="exact_path", confidence="high", file_paths=t1)
     t2 = _tier2_unique_basename(thinking, basename_to_paths)

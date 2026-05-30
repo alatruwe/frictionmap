@@ -55,11 +55,11 @@ def test_attribution_exact_path_suffix_match(tmp_path):
     assert attr.file_paths == ["/Users/x/proj/src/storage.py"]
 
 
-def test_attribution_exact_path_longest_match_wins(tmp_path):
+def test_attribution_exact_path_disambiguates_by_path_fragment(tmp_path):
     # Two canonical paths both ending in storage.py; thinking mentions the
-    # longer "attune/storage.py". Both still match at the "storage.py"
-    # suffix, but the longer one also matches at "attune/storage.py".
-    # Per 1.2, both paths are returned.
+    # path fragment "attune/storage.py". Tier 1 matches ONLY the path whose
+    # fragment suffix appears — the bare "storage.py" is not a Tier 1 suffix,
+    # so /proj/other/storage.py is no longer over-claimed (the C2 fix).
     jsonl(tmp_path / "s.jsonl", [
         assistant("s1", "u1", [_read_use("t1", "/proj/attune/storage.py")],
                   cwd="/proj"),
@@ -70,14 +70,11 @@ def test_attribution_exact_path_longest_match_wins(tmp_path):
     corpus = parse_sessions(tmp_path)
     attribute_thinking_blocks(corpus)
     attr = _first_thinking_attribution(corpus)
-    # Only /proj/attune/storage.py has "attune/storage.py" as a suffix.
-    # "/proj/other/storage.py" suffixes are [.../storage.py, other/storage.py,
-    # storage.py], none of which is "attune/storage.py"; but "storage.py"
-    # IS present in thinking too. So both match via the "storage.py" suffix.
+    # Only /proj/attune/storage.py has "attune/storage.py" as a fragment
+    # suffix. /proj/other/storage.py has no path-fragment suffix present, and
+    # bare "storage.py" no longer attributes at Tier 1.
     assert attr.tier == "exact_path"
-    assert set(attr.file_paths) == {
-        "/proj/attune/storage.py", "/proj/other/storage.py",
-    }
+    assert attr.file_paths == ["/proj/attune/storage.py"]
 
 
 def test_attribution_exact_path_respects_path_boundary(tmp_path):
@@ -96,9 +93,10 @@ def test_attribution_exact_path_respects_path_boundary(tmp_path):
     assert attr.tier != "exact_path"
 
 
-def test_attribution_tier1_multiple_distinct_paths_attributed(tmp_path):
-    # Thinking mentions two distinct canonical paths. Both attribute
-    # under the schema-1.2 multi-file rule.
+def test_attribution_tier2_multiple_unique_basenames_attributed(tmp_path):
+    # Thinking mentions two bare basenames, each unique in the session. Neither
+    # is a Tier 1 path fragment, so both resolve via Tier 2 unique_basename
+    # (schema-1.2 multi-file rule applies at Tier 2 too).
     jsonl(tmp_path / "s.jsonl", [
         assistant("s1", "u1", [_read_use("t1", "/proj/storage.py")]),
         assistant("s1", "u2", [_read_use("t2", "/proj/logger.py")]),
@@ -107,8 +105,26 @@ def test_attribution_tier1_multiple_distinct_paths_attributed(tmp_path):
     corpus = parse_sessions(tmp_path)
     attribute_thinking_blocks(corpus)
     attr = _first_thinking_attribution(corpus)
-    assert attr.tier == "exact_path"
+    assert attr.tier == "unique_basename"
+    assert attr.confidence == "medium"
     assert set(attr.file_paths) == {"/proj/storage.py", "/proj/logger.py"}
+
+
+def test_attribution_tier1_multiple_path_fragments_attributed(tmp_path):
+    # Thinking mentions two distinct path fragments (each contains "/"), so
+    # both still attribute at Tier 1 under the schema-1.2 multi-file rule.
+    jsonl(tmp_path / "s.jsonl", [
+        assistant("s1", "u1", [_read_use("t1", "/proj/a/storage.py")], cwd="/proj"),
+        assistant("s1", "u2", [_read_use("t2", "/proj/b/logger.py")], cwd="/proj"),
+        assistant("s1", "u3",
+                  [_thinking("a/storage.py talks to b/logger.py here")]),
+    ])
+    corpus = parse_sessions(tmp_path)
+    attribute_thinking_blocks(corpus)
+    attr = _first_thinking_attribution(corpus)
+    assert attr.tier == "exact_path"
+    assert attr.confidence == "high"
+    assert set(attr.file_paths) == {"/proj/a/storage.py", "/proj/b/logger.py"}
 
 
 def test_attribution_unique_basename(tmp_path):
@@ -120,38 +136,17 @@ def test_attribution_unique_basename(tmp_path):
     corpus = parse_sessions(tmp_path)
     attribute_thinking_blocks(corpus)
     attr = _first_thinking_attribution(corpus)
-    # Tier 1 fires because "storage.py" is a suffix of the canonical path.
-    # To exercise Tier 2, we need a canonical path that does NOT suffix-match.
-    # Reshape test accordingly.
-    # (This test passes via Tier 1, not Tier 2 — see next test for Tier 2.)
+    # Bare "storage.py" is not a Tier 1 path fragment, so Tier 1 misses and
+    # Tier 2 resolves the unique basename to its one canonical path.
+    assert attr.tier == "unique_basename"
+    assert attr.confidence == "medium"
     assert attr.file_paths == ["/proj/deep/path/storage.py"]
 
 
 def test_attribution_unique_basename_fires_when_tier1_misses():
-    # Canonical path has storage.py as suffix; thinking mentions a different
-    # bare basename that doesn't exist as any suffix.
-    # Trick: use a basename that appears in thinking but not as a canonical
-    # path suffix. Since any canonical basename IS a suffix, we need two
-    # session files where only one is obvious.
-    # Simpler: thinking mentions storage.py; the session only touched
-    # /proj/storage.py. Tier 1 fires first. This test is effectively a
-    # duplicate of exact_path — so we engineer a case where thinking says
-    # "storage.py" and the canonical path is `/proj/src/storage.py` — Tier 1
-    # still fires via the "storage.py" suffix. To see Tier 2 solo, we need
-    # to make Tier 1 miss. Use path boundary obfuscation: session-touched
-    # is "/proj/PREFIX_storage.py" (Tier 1 miss for "storage.py") but we
-    # still want Tier 2 to match "storage.py". But basename_to_paths would
-    # key on "PREFIX_storage.py" not "storage.py". So no basename match either.
-    #
-    # Conclusion: in practice Tier 1 subsumes Tier 2 whenever a canonical
-    # basename matches. Tier 2 is useful only when thinking mentions a
-    # basename whose *suffix form* doesn't appear in any canonical path —
-    # which means the basename_to_paths lookup must have that basename as
-    # a key, which means it IS a canonical basename, which means Tier 1
-    # WOULD have matched. So Tier 2 is genuinely a fallthrough case that
-    # rarely fires independently.
-    # This test just exercises the Tier 2 code path by forcing it via a
-    # direct attribute call where Tier 1 is bypassed.
+    # A bare basename in thinking is no longer a Tier 1 suffix, so Tier 1
+    # misses and Tier 2 resolves it when the basename is unique in the
+    # session. Direct call to keep the Tier 2 contract pinned in isolation.
     from frictionmap.attribution import _tier2_unique_basename
     basename_to_paths = {"storage.py": {"/proj/storage.py"}}
     result = _tier2_unique_basename("talking about storage.py", basename_to_paths)
@@ -159,13 +154,41 @@ def test_attribution_unique_basename_fires_when_tier1_misses():
 
 
 def test_attribution_ambiguous_basename_falls_through():
-    # Two session files share basename utils.py. Thinking mentions utils.py.
-    # Tier 1 will match both because "utils.py" is a suffix of both canonical
-    # paths. This test ensures Tier 2 itself (in isolation) drops ambiguous.
+    # Two session files share basename utils.py. Tier 2 (in isolation) drops
+    # the ambiguous basename since it resolves to more than one path.
     from frictionmap.attribution import _tier2_unique_basename
     basename_to_paths = {"utils.py": {"/proj/a/utils.py", "/proj/b/utils.py"}}
     result = _tier2_unique_basename("look at utils.py", basename_to_paths)
     assert result == []
+
+
+def test_attribution_ambiguous_basename_falls_through_end_to_end(tmp_path):
+    # Two session files share basename utils.py; thinking names the bare
+    # basename. Tier 1 no longer over-claims both (the C2 fix), Tier 2 drops
+    # it as ambiguous, so attribution falls through to Tier 3 — NOT exact_path.
+    jsonl(tmp_path / "s.jsonl", [
+        assistant("s1", "u1", [_read_use("t1", "/proj/a/utils.py")], cwd="/proj"),
+        assistant("s1", "u2", [_read_use("t2", "/proj/b/utils.py")], cwd="/proj"),
+        assistant("s1", "u3", [_thinking("look at utils.py")], cwd="/proj"),
+    ])
+    corpus = parse_sessions(tmp_path)
+    attribute_thinking_blocks(corpus)
+    attr = _first_thinking_attribution(corpus)
+    assert attr.tier != "exact_path"
+    assert attr.tier != "unique_basename"
+    assert attr.tier == "temporal_proximity"
+
+
+def test_attribution_tier1_pattern_hyphen_boundary():
+    # The Tier 1 pattern's boundary excludes "-" as well as word chars, so a
+    # path fragment preceded by "-" does not false-match (symmetric with "_").
+    from frictionmap.attribution import _tier1_pattern
+    pat = _tier1_pattern("/proj/src/storage.py")
+    assert pat is not None
+    assert pat.search("look at src/storage.py here")      # clean boundary
+    assert pat.search("/proj/src/storage.py is hot")       # full path
+    assert pat.search("foo_src/storage.py") is None        # "_" boundary blocks
+    assert pat.search("vendored-src/storage.py") is None   # "-" boundary blocks
 
 
 def test_attribution_no_filename_falls_through(tmp_path):
@@ -275,5 +298,6 @@ def test_attribution_applies_to_agent_sourced_thinking(tmp_path):
     thinking_block = next(b for b in blocks if b.type == "thinking")
     assert thinking_block.agent_sourced is True
     assert thinking_block.attribution is not None
-    assert thinking_block.attribution.tier == "exact_path"
+    # Bare "storage.py" resolves via Tier 2 (unique basename), not Tier 1.
+    assert thinking_block.attribution.tier == "unique_basename"
     assert thinking_block.attribution.file_paths == ["/proj/storage.py"]
