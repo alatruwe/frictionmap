@@ -50,9 +50,10 @@ _BASH_SYSTEM_PREFIXES = (
 # start; takes the path prefix only.
 _GREP_LINE_RE = re.compile(r"^([^\s:][^\s]*?)[-:]\d+[-:]")
 
-# Skill/TaskOutput/TaskStop share Agent's "sub-delegation, files live
-# elsewhere" property; the others are genuinely non-file-touching.
-# TODO: document tracked / excluded tools in SIGNALS.md
+# Tools that never attribute file paths, so extract_file_paths returns []
+# for them: Skill/TaskOutput/TaskStop share Agent's "sub-delegation, files
+# live elsewhere" property; the rest (TodoWrite, ExitPlanMode, ToolSearch,
+# AskUserQuestion, WebSearch, WebFetch) are genuinely non-file-touching.
 _SKIP_TOOLS = frozenset({
     "TodoWrite", "ExitPlanMode", "ToolSearch", "AskUserQuestion", "WebSearch",
     "WebFetch", "Skill", "TaskOutput", "TaskStop",
