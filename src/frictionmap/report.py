@@ -80,13 +80,20 @@ def _is_ignored(canonical_path: str) -> bool:
 #   1. Best-effort *repo-relative* display via a derived strip-root
 #      (`derive_strip_root` + `display_path`).
 #   2. The actual *no-leak guarantee*: `_HOME_PREFIX_RE` redacts ANY home-dir
-#      prefix (`/Users/<u>/`, `/home/<u>/` — local or foreign) to `~/`,
+#      prefix (`/Users/<u>`, `/home/<u>` — local or foreign) to `~`,
 #      derivation-independent. This is what keeps corpora recorded on another
 #      machine leak-free when the slug can't derive their root.
 # This runs AFTER assembly; the FS-read path (`canonicalize_path` →
 # `compute_file_complexity`) stays absolute and is untouched.
+#
+# The user segment is matched WITHOUT a trailing slash and stops at the next
+# slash OR whitespace, so it redacts both `/Users/bob/x` → `~/x` (structured
+# paths) and a bare clause-final `/Users/bob` → `~` (prose). Requiring a
+# trailing slash would leave the bare-prose form unredacted — a latent leak the
+# acceptance grep would only catch if a corpus happened to contain that shape.
 
-_HOME_PREFIX_RE = re.compile(r"/(?:Users|home)/[^/]+/")
+_HOME_PREFIX_RE = re.compile(r"/(?:Users|home)/[^/\s]+")
+_HOME_SUB = "~"
 
 
 def derive_strip_root(sessions_dir_name: str, file_paths: list[str]) -> str | None:
@@ -142,7 +149,7 @@ def display_path(path: str, root: str | None) -> str:
             return ""
         if path.startswith(prefix):
             return path[len(prefix):]
-    return _HOME_PREFIX_RE.sub("~/", path)
+    return _HOME_PREFIX_RE.sub(_HOME_SUB, path)
 
 
 def redact_prose(
@@ -158,12 +165,12 @@ def redact_prose(
     matches = list(_HOME_PREFIX_RE.finditer(text))
     if not matches:
         return text, highlights
-    new_text = _HOME_PREFIX_RE.sub("~/", text)
+    new_text = _HOME_PREFIX_RE.sub(_HOME_SUB, text)
     # (original end-of-match offset, cumulative length delta through that match)
     checkpoints: list[tuple[int, int]] = []
     cum = 0
     for m in matches:
-        cum += len("~/") - (m.end() - m.start())
+        cum += len(_HOME_SUB) - (m.end() - m.start())
         checkpoints.append((m.end(), cum))
 
     def remap(off: int) -> int:

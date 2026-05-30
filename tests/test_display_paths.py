@@ -102,6 +102,17 @@ def test_redact_prose_noop_without_home() -> None:
     assert new_h == h
 
 
+def test_redact_prose_redacts_bare_home_at_clause_end() -> None:
+    # The backstop must not depend on a trailing slash: prose can end a clause
+    # on the bare home dir. The user segment is redacted whole, stopping at
+    # whitespace (not eating the following word).
+    text = "the checkout lives in /Users/adelinelatruwe and nowhere else"
+    new_text, _ = redact_prose(text, [])
+    assert "/Users/" not in new_text
+    assert "adelinelatruwe" not in new_text
+    assert new_text == "the checkout lives in ~ and nowhere else"
+
+
 def test_redact_prose_redacts_and_remaps_highlight_after_path() -> None:
     # The trap: a marker AFTER an inline absolute path. Redaction shortens the
     # text, so the highlight offset must shift or it bolds the wrong chars.
