@@ -116,7 +116,7 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
     from frictionmap.baselines import load_baseline_cache
     from frictionmap.events import BaselineSet
     from frictionmap.parser import parse_sessions
-    from frictionmap.report import assemble_report
+    from frictionmap.report import assemble_report, derive_strip_root, display_path
     from frictionmap.scoring import score_corpus
 
     src_path = sessions_dir / f"{session_id}.jsonl"
@@ -128,6 +128,13 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
         (td_path / src_path.name).write_bytes(src_path.read_bytes())
         corpus = parse_sessions(td_path)
         report = assemble_report(corpus, sessions_dir_name=sessions_dir.name)
+
+    # Strip-root for display only. The ranking loop below keys `file_scores` on
+    # the absolute `f.path`, so it stays absolute; relativization is applied
+    # solely at the print site.
+    strip_root = derive_strip_root(
+        sessions_dir.name, [f.path for f in report.files]
+    )
 
     cached = load_baseline_cache()
     warning = ""
@@ -188,7 +195,7 @@ def summarize_session(session_id: str, sessions_dir: Path) -> str:
     else:
         for score, f in ranked[:5]:
             summary = f"score {score:.3f} | {len(f.excerpts)} marker excerpts"
-            lines.append(f"  {f.path}    {summary}")
+            lines.append(f"  {display_path(f.path, strip_root)}    {summary}")
     return "\n".join(lines)
 
 

@@ -9,7 +9,7 @@ from frictionmap import __version__
 from frictionmap.baselines import save_baseline_cache
 from frictionmap.parser import parse_sessions
 from frictionmap.render import load_template_assets, render_report
-from frictionmap.report import assemble_report
+from frictionmap.report import assemble_report, derive_strip_root, relativize_report
 from frictionmap.sessions import (
     find_active_sessions,
     format_relative_time,
@@ -70,6 +70,14 @@ def _cmd_scan(args: argparse.Namespace) -> int:
         sessions_dir_name=sessions_dir.name,
         sessions_dir=sessions_dir,
     )
+    # Relativize for display BEFORE render and BEFORE --checkpoint: strips the
+    # machine-identifying absolute paths out of the payload and every terminal
+    # surface in one pass. Root is recomputed here (never stored on Report —
+    # that would re-embed an absolute home path in the serialized payload).
+    strip_root = derive_strip_root(
+        sessions_dir.name, [f.path for f in report.files]
+    )
+    report = relativize_report(report, strip_root)
     template, app_jsx, styles_css = load_template_assets()
     rendered = render_report(report, template, app_jsx, styles_css)
     Path("report.html").write_text(rendered, encoding="utf-8")

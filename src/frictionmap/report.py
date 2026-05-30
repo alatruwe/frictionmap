@@ -8,6 +8,7 @@ score_components, baselines) are emitted as zero/empty scaffolds; Phase
 from __future__ import annotations
 
 import fnmatch
+import re
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,7 @@ from frictionmap.events import (
     CodebaseMeta,
     Corpus,
     FileFriction,
+    Highlight,
     LeakageCounts,
     ModelDistribution,
     Report,
@@ -69,6 +71,169 @@ def _is_ignored(canonical_path: str) -> bool:
             if basename == pattern:
                 return True
     return False
+
+
+# --- Display-time path relativization (issue #1) -----------------------------
+#
+# The shipped report must not embed machine-identifying absolute paths. Two
+# jobs, kept separate:
+#   1. Best-effort *repo-relative* display via a derived strip-root
+#      (`derive_strip_root` + `display_path`).
+#   2. The actual *no-leak guarantee*: `_HOME_PREFIX_RE` redacts ANY home-dir
+#      prefix (`/Users/<u>`, `/home/<u>` — local or foreign) to `~`,
+#      derivation-independent. This is what keeps corpora recorded on another
+#      machine leak-free when the slug can't derive their root.
+# This runs AFTER assembly; the FS-read path (`canonicalize_path` →
+# `compute_file_complexity`) stays absolute and is untouched.
+#
+# The user segment is matched WITHOUT a trailing slash and stops at the next
+# slash OR whitespace, so it redacts both `/Users/bob/x` → `~/x` (structured
+# paths) and a bare clause-final `/Users/bob` → `~` (prose). Requiring a
+# trailing slash would leave the bare-prose form unredacted — a latent leak the
+# acceptance grep would only catch if a corpus happened to contain that shape.
+
+_HOME_PREFIX_RE = re.compile(r"/(?:Users|home)/[^/\s]+")
+_HOME_SUB = "~"
+
+
+def derive_strip_root(sessions_dir_name: str, file_paths: list[str]) -> str | None:
+    """Decode the Claude Code sessions-dir slug into the project root.
+
+    Claude Code names a project's sessions dir by replacing path slashes with
+    dashes, so the slug is ambiguous when a real directory name contains a dash
+    (`-Users-x-Projects-ai-friction-map` could decode to `.../ai/friction/map`
+    or `.../ai-friction-map`). We repair the ambiguity by aligning the slug
+    against a real recorded file path: a slug `-` matches a path `/` *or* `-`,
+    any other character must match exactly, and the root is the path prefix that
+    consumes the whole slug body at a path boundary.
+
+    Returns None when no recorded path aligns — notably a corpus recorded on
+    another machine, whose paths carry a different username than this machine's
+    import-dir slug. The caller's home-prefix backstop keeps those leak-free.
+    """
+    body = sessions_dir_name.lstrip("-")
+    if not body:
+        return None
+    for fp in file_paths:
+        sample = fp.lstrip("/")
+        i = j = 0
+        ok = True
+        while i < len(body):
+            if j >= len(sample):
+                ok = False
+                break
+            if body[i] == "-":
+                if sample[j] not in ("/", "-"):
+                    ok = False
+                    break
+            elif sample[j] != body[i]:
+                ok = False
+                break
+            i += 1
+            j += 1
+        if ok and (j == len(sample) or sample[j] == "/"):
+            return "/" + sample[:j]
+    return None
+
+
+def display_path(path: str, root: str | None) -> str:
+    """Repo-relative display form of `path`.
+
+    Strips `root/` when `path` is under it; otherwise applies the home-prefix
+    backstop. A path the root isn't a prefix of and that carries no home prefix
+    (e.g. a `/proj/...` test fixture) is returned unchanged.
+    """
+    if root:
+        prefix = root.rstrip("/") + "/"
+        if path == root:
+            return ""
+        if path.startswith(prefix):
+            return path[len(prefix):]
+    return _HOME_PREFIX_RE.sub(_HOME_SUB, path)
+
+
+def redact_prose(
+    text: str, highlights: list[Highlight]
+) -> tuple[str, list[Highlight]]:
+    """Home-redact absolute paths mentioned inline in thinking prose.
+
+    `excerpt.text` ships in the payload verbatim and mentions absolute paths, so
+    the same backstop applies. Redaction shortens the text, so highlight char
+    offsets after each redacted span must shift by the cumulative length delta —
+    otherwise marker bolding lands on the wrong characters.
+    """
+    matches = list(_HOME_PREFIX_RE.finditer(text))
+    if not matches:
+        return text, highlights
+    new_text = _HOME_PREFIX_RE.sub(_HOME_SUB, text)
+    # (original end-of-match offset, cumulative length delta through that match)
+    checkpoints: list[tuple[int, int]] = []
+    cum = 0
+    for m in matches:
+        cum += len(_HOME_SUB) - (m.end() - m.start())
+        checkpoints.append((m.end(), cum))
+
+    def remap(off: int) -> int:
+        shift = 0
+        for end, delta in checkpoints:
+            if off >= end:
+                shift = delta
+            else:
+                break
+        return max(0, off + shift)
+
+    new_highlights = [
+        replace(h, start=remap(h.start), end=remap(h.end)) for h in highlights
+    ]
+    return new_text, new_highlights
+
+
+def relativize_report(report: Report, root: str | None) -> Report:
+    """Return a display copy of `report` with every path-bearing field made
+    repo-relative (or home-redacted) and excerpt prose home-redacted.
+
+    Deep-rebuilds nested excerpts/attribution/highlights via `dataclasses.replace`
+    so a shared excerpt object (one excerpt can attribute to several files) is
+    never mutated in place. `meta` carries no paths and is left untouched
+    (its `name` was already derived in `assemble_report`).
+    """
+    def relativize_excerpt(ex: ThinkingExcerpt) -> ThinkingExcerpt:
+        new_text, new_highlights = redact_prose(ex.text, ex.highlights)
+        attribution = ex.attribution
+        if attribution is not None:
+            attribution = replace(
+                attribution,
+                file_paths=[display_path(p, root) for p in attribution.file_paths],
+            )
+        return replace(
+            ex, text=new_text, highlights=new_highlights, attribution=attribution
+        )
+
+    new_files = [
+        replace(
+            f,
+            path=display_path(f.path, root),
+            directory=display_path(f.directory, root),
+            excerpts=[relativize_excerpt(ex) for ex in f.excerpts],
+        )
+        for f in report.files
+    ]
+    return replace(report, files=new_files)
+
+
+def _codebase_name(sessions_dir_name: str, file_paths: list[str]) -> str:
+    """Display name for the codebase.
+
+    Prefer the basename of the derived strip-root (robust, disambiguated by the
+    real file paths). Fall back to the slug's last dash-segment when the root
+    can't be derived (e.g. a corpus recorded on another machine).
+    """
+    root = derive_strip_root(sessions_dir_name, file_paths)
+    if root:
+        return Path(root).name
+    if not sessions_dir_name:
+        return ""
+    return sessions_dir_name.rsplit("-", 1)[-1]
 
 
 def assemble_report(
@@ -152,7 +317,7 @@ def assemble_report(
     files.sort(key=lambda f: f.score, reverse=True)
 
     meta = CodebaseMeta(
-        name=_extract_codebase_name(sessions_dir_name),
+        name=_codebase_name(sessions_dir_name, [f.path for f in files]),
         session_count=corpus.session_count,
         file_count=len(files),
         thinking_block_count=_count_thinking_blocks(corpus),
@@ -301,23 +466,3 @@ def _count_models(corpus: Corpus) -> ModelDistribution:
         sessions_by_model=sessions_by_model,
         unknown_model_event_count=unknown,
     )
-
-
-def _extract_codebase_name(sessions_dir_name: str) -> str:
-    """Derive a codebase name from a Claude Code project-dir basename.
-
-    TODO: real path-encoding parser. For v1, we use a heuristic:
-    Claude Code encodes project paths by replacing slashes with dashes,
-    so `-Users-x-Projects-my-cool-project` is ambiguous (was the dir
-    `my-cool-project` or `my/cool/project`?). The heuristic prefers the
-    common case: the project lives under a `Projects/` directory, so
-    take everything after the last `-Projects-`.
-    """
-    if not sessions_dir_name:
-        return ""
-    marker = "-Projects-"
-    idx = sessions_dir_name.rfind(marker)
-    if idx >= 0:
-        return sessions_dir_name[idx + len(marker):]
-    parts = sessions_dir_name.split("-")
-    return parts[-1] if parts else ""
