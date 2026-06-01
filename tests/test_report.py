@@ -549,8 +549,6 @@ def test_model_distribution_unknown_bucket_counts_only_assistant_like(tmp_path: 
 
 # --- Phase 5b: user-managed ignore -------------------------------------------
 
-import pathspec  # noqa: E402
-
 from frictionmap.report import (  # noqa: E402
     build_user_ignore,
     count_likely_noise_in_top,
@@ -576,8 +574,8 @@ def test_find_ignore_file_walks_up_to_nearest(tmp_path: Path) -> None:
     found = find_ignore_file(nested)
     assert found == tmp_path / ".frictionmap-ignore"
     # And it parses into a working spec.
-    spec = build_user_ignore(found, [])
-    assert spec is not None and spec.match_file("/proj/poetry.lock")
+    user_ignore = build_user_ignore(found, [])
+    assert user_ignore is not None and user_ignore.matches("/proj/poetry.lock")
 
 
 def test_find_ignore_file_nearest_wins(tmp_path: Path) -> None:
@@ -639,6 +637,52 @@ def test_user_patterns_do_not_replace_defaults(tmp_path: Path) -> None:
     assert "/proj/.git/refs/heads/main" not in paths
 
 
+def test_anchored_pattern_relativizes_to_ignore_file_dir(tmp_path: Path) -> None:
+    # A gitignore-anchored pattern (/build) must hide an in-tree path under the
+    # ignore file's directory, and must NOT hide an identically-named path
+    # outside that anchor. This is the behavior the bare absolute match got
+    # wrong — without relativizing, /build matched nothing.
+    # Use a dir name that is NOT a built-in default (build/, dist/ etc. would
+    # be filtered regardless and couldn't distinguish anchored behavior).
+    ignore_file = tmp_path / ".frictionmap-ignore"
+    ignore_file.write_text("/reports\n", encoding="utf-8")
+    user_ignore = build_user_ignore(ignore_file, [])
+    in_tree = f"{tmp_path}/reports/x.js"
+    out_of_tree = "/elsewhere/reports/y.js"
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": in_tree, "old_string": "a", "new_string": "b"}},
+            {"type": "tool_use", "id": "t2", "name": "Edit",
+             "input": {"file_path": out_of_tree, "old_string": "c", "new_string": "d"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan_with_ignore(tmp_path, user_ignore)
+    paths = {f.path for f in report.files}
+    assert in_tree not in paths          # anchored pattern fires in-tree
+    assert out_of_tree in paths          # anchor does not reach outside the tree
+
+
+def test_out_of_tree_path_falls_back_to_floating_match(tmp_path: Path) -> None:
+    # A path outside the anchor (a session that touched a file outside the
+    # project root) isn't relative to the anchor — it falls back to absolute
+    # matching, where a floating pattern (*.lock) still fires. Must not raise.
+    ignore_file = tmp_path / ".frictionmap-ignore"
+    ignore_file.write_text("*.lock\n", encoding="utf-8")
+    user_ignore = build_user_ignore(ignore_file, [])
+    out_of_tree = "/somewhere/else/deps.lock"
+    records = [
+        assistant("s1", "u1", [
+            {"type": "tool_use", "id": "t1", "name": "Edit",
+             "input": {"file_path": out_of_tree, "old_string": "a", "new_string": "b"}},
+        ]),
+    ]
+    jsonl(tmp_path / "s.jsonl", records)
+    _, report = _scan_with_ignore(tmp_path, user_ignore)
+    assert out_of_tree not in {f.path for f in report.files}
+
+
 def test_user_ignore_does_not_affect_baselines(tmp_path: Path) -> None:
     # Sibling to test_filter_does_not_affect_baselines, for USER patterns.
     # Two corpora differ only by an Edit + thinking block on generated.py.
@@ -672,7 +716,7 @@ def test_user_ignore_does_not_affect_baselines(tmp_path: Path) -> None:
     ]
     jsonl(extended_dir / "s.jsonl", extended_records)
 
-    user_ignore = pathspec.PathSpec.from_lines("gitwildmatch", ["generated.py"])
+    user_ignore = build_user_ignore(None, ["generated.py"])
     _, base_report = _scan_with_ignore(base_dir, user_ignore)
     _, ext_report = _scan_with_ignore(extended_dir, user_ignore)
 

@@ -12,6 +12,7 @@ import re
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import NamedTuple
 
 import pathspec
 
@@ -84,12 +85,36 @@ def _is_ignored(canonical_path: str) -> bool:
 # `assemble_report`, after baselines are computed) — user patterns *add* to the
 # defaults, never replace them, and never reshape the corpus baseline.
 #
-# Pre-flight (Phase 5b) confirmed pathspec's gitwildmatch matches the absolute
-# path strings we carry (`/proj/...`) directly for the common non-anchored
-# patterns, so no leading-slash normalization is applied here. If a match site
-# is ever added that needs it, normalize at every site.
+# Anchoring: corpus paths are absolute (`/proj/foo.py`), but gitignore patterns
+# are anchored to the location of the ignore file. So we relativize each
+# candidate against the spec's anchor before matching — `find_ignore_file().parent`
+# when a file exists, else CWD for flag-only runs (one anchor for the merged
+# spec, not per-pattern). This makes the full gitignore mental model hold:
+# `/build` and `src/foo.py` anchor to the project root as the user expects.
+# Out-of-tree candidates (a session that Read/Edit a file outside the project
+# root, e.g. `~/Downloads/handoff.diff`) aren't relative to the anchor; they
+# fall back to absolute matching, where floating patterns (`*.lock`) still fire.
 
 IGNORE_FILENAME = ".frictionmap-ignore"
+
+
+class UserIgnore(NamedTuple):
+    """A compiled user ignore spec plus the directory it is anchored to.
+
+    `matches` relativizes the candidate path against `anchor` so gitignore
+    anchoring behaves as written; out-of-tree paths fall back to absolute
+    matching (floating patterns still fire).
+    """
+
+    spec: pathspec.PathSpec
+    anchor: Path
+
+    def matches(self, path: str) -> bool:
+        try:
+            rel = str(Path(path).relative_to(self.anchor))
+        except ValueError:
+            rel = path  # out-of-tree (same-machine): floating patterns still fire
+        return self.spec.match_file(rel)
 
 
 def find_ignore_file(start: Path | None = None) -> Path | None:
@@ -112,14 +137,16 @@ def find_ignore_file(start: Path | None = None) -> Path | None:
 
 def build_user_ignore(
     ignore_file: Path | None, cli_patterns: list[str]
-) -> pathspec.PathSpec | None:
-    """Compile file + flag patterns into one gitignore-semantics PathSpec.
+) -> UserIgnore | None:
+    """Compile file + flag patterns into one anchored gitignore spec.
 
     File lines come first, then `cli_patterns` — so a `--ignore '!foo'` flag
     wins over a file pattern (flag-overrides-file, an intentional default).
-    `from_lines` skips blanks and `#` comments. Returns None when the combined
-    list is empty, keeping the per-path check a cheap None test and leaving
-    behavior identical to a no-ignore run.
+    `from_lines` skips blanks and `#` comments. The anchor is the ignore file's
+    directory when a file exists, else CWD — so flag patterns share the file's
+    anchor on a combined run. Returns None when the combined list is empty,
+    keeping the per-path check a cheap None test and leaving behavior identical
+    to a no-ignore run.
     """
     lines: list[str] = []
     if ignore_file is not None:
@@ -127,7 +154,8 @@ def build_user_ignore(
     lines.extend(cli_patterns)  # flag after file: flag-overrides-file
     if not any(line.strip() and not line.lstrip().startswith("#") for line in lines):
         return None
-    return pathspec.PathSpec.from_lines("gitwildmatch", lines)
+    anchor = ignore_file.parent if ignore_file is not None else Path.cwd()
+    return UserIgnore(pathspec.PathSpec.from_lines("gitwildmatch", lines), anchor)
 
 
 # --- Passive noise hint (Phase 5b) -------------------------------------------
@@ -336,7 +364,7 @@ def assemble_report(
     corpus: Corpus,
     sessions_dir_name: str = "",
     sessions_dir: Path | None = None,
-    user_ignore: pathspec.PathSpec | None = None,
+    user_ignore: UserIgnore | None = None,
 ) -> Report:
     """Build a Report from a fully-parsed Corpus.
 
@@ -364,7 +392,7 @@ def assemble_report(
 
     files: list[FileFriction] = []
     for path in sorted(interesting_files):
-        if _is_ignored(path) or (user_ignore is not None and user_ignore.match_file(path)):
+        if _is_ignored(path) or (user_ignore is not None and user_ignore.matches(path)):
             continue
         complexity = compute_file_complexity(path)
         leakage = corpus.leakage_by_file.get(path, LeakageCounts())
