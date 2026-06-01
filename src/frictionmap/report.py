@@ -12,6 +12,9 @@ import re
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import NamedTuple
+
+import pathspec
 
 from frictionmap.baselines import (
     compute_corpus_baseline,
@@ -71,6 +74,127 @@ def _is_ignored(canonical_path: str) -> bool:
             if basename == pattern:
                 return True
     return False
+
+
+# --- User-managed ignore (Phase 5b) ------------------------------------------
+#
+# Users extend the built-in noise filter two ways: a `.frictionmap-ignore` file
+# (gitignore-style, discovered by walk-up from CWD) and a repeatable `--ignore`
+# flag. Both feed a single compiled `pathspec.PathSpec`. This is OR'd with the
+# 13 built-in defaults at the SAME presentation-layer seam (the per-path loop in
+# `assemble_report`, after baselines are computed) — user patterns *add* to the
+# defaults, never replace them, and never reshape the corpus baseline.
+#
+# Anchoring: corpus paths are absolute (`/proj/foo.py`), but gitignore patterns
+# are anchored to the location of the ignore file. So we relativize each
+# candidate against the spec's anchor before matching — `find_ignore_file().parent`
+# when a file exists, else CWD for flag-only runs (one anchor for the merged
+# spec, not per-pattern). This makes the full gitignore mental model hold:
+# `/build` and `src/foo.py` anchor to the project root as the user expects.
+# Out-of-tree candidates (a session that Read/Edit a file outside the project
+# root, e.g. `~/Downloads/handoff.diff`) aren't relative to the anchor; they
+# fall back to absolute matching, where floating patterns (`*.lock`) still fire.
+
+IGNORE_FILENAME = ".frictionmap-ignore"
+
+
+class UserIgnore(NamedTuple):
+    """A compiled user ignore spec plus the directory it is anchored to.
+
+    `matches` relativizes the candidate path against `anchor` so gitignore
+    anchoring behaves as written; out-of-tree paths fall back to absolute
+    matching (floating patterns still fire).
+    """
+
+    spec: pathspec.PathSpec
+    anchor: Path
+
+    def matches(self, path: str) -> bool:
+        try:
+            rel = str(Path(path).relative_to(self.anchor))
+        except ValueError:
+            rel = path  # out-of-tree (same-machine): floating patterns still fire
+        return self.spec.match_file(rel)
+
+
+def find_ignore_file(start: Path | None = None) -> Path | None:
+    """Walk up from `start` (default CWD) for the nearest `.frictionmap-ignore`.
+
+    Mirrors `resolve_sessions_dir`'s loop: check the current directory BEFORE
+    stepping to the parent, so the nearest (deepest) file wins. Unlike the
+    sessions-dir resolver, the ignore file is optional — returns None when no
+    ancestor has one, rather than raising.
+    """
+    path = start or Path.cwd()
+    while True:
+        candidate = path / IGNORE_FILENAME
+        if candidate.is_file():
+            return candidate
+        if path.parent == path:
+            return None
+        path = path.parent
+
+
+def build_user_ignore(
+    ignore_file: Path | None, cli_patterns: list[str]
+) -> UserIgnore | None:
+    """Compile file + flag patterns into one anchored gitignore spec.
+
+    File lines come first, then `cli_patterns` — so a `--ignore '!foo'` flag
+    wins over a file pattern (flag-overrides-file, an intentional default).
+    `from_lines` skips blanks and `#` comments. The anchor is the ignore file's
+    directory when a file exists, else CWD — so flag patterns share the file's
+    anchor on a combined run. Returns None when the combined list is empty,
+    keeping the per-path check a cheap None test and leaving behavior identical
+    to a no-ignore run.
+    """
+    lines: list[str] = []
+    if ignore_file is not None:
+        lines.extend(ignore_file.read_text(encoding="utf-8").splitlines())
+    lines.extend(cli_patterns)  # flag after file: flag-overrides-file
+    if not any(line.strip() and not line.lstrip().startswith("#") for line in lines):
+        return None
+    anchor = ignore_file.parent if ignore_file is not None else Path.cwd()
+    return UserIgnore(pathspec.PathSpec.from_lines("gitwildmatch", lines), anchor)
+
+
+# --- Passive noise hint (Phase 5b) -------------------------------------------
+#
+# A loose, non-binding nudge surfaced after a scan: if several top-ranked files
+# look like generated/vendored noise the defaults didn't catch, point the user
+# at `.frictionmap-ignore`. Deliberately loose and allowed to overlap the
+# defaults (defaults already removed their matches, so overlap is inert). NOT
+# pathspec — basename globs + path-segment substrings. If this ever migrates
+# onto pathspec, it must carry the same path normalization as the match seam.
+
+_NOISE_GLOBS: tuple[str, ...] = (
+    "*.lock",
+    "*.min.js",
+    "*.min.css",
+    "*.snap",
+    "*.map",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "poetry.lock",
+    "Cargo.lock",
+    "Gemfile.lock",
+    "composer.lock",
+)
+_NOISE_SEGMENTS: tuple[str, ...] = ("vendor", "dist", "generated")
+
+
+def _looks_like_noise(path: str) -> bool:
+    basename = Path(path).name
+    if any(fnmatch.fnmatch(basename, glob) for glob in _NOISE_GLOBS):
+        return True
+    segments = path.split("/")
+    return any(seg in segments for seg in _NOISE_SEGMENTS)
+
+
+def count_likely_noise_in_top(files: list[FileFriction], top_n: int = 20) -> int:
+    """Count how many of the top-`top_n` (score-sorted) files look like noise."""
+    return sum(1 for f in files[:top_n] if _looks_like_noise(f.path))
 
 
 # --- Display-time path relativization (issue #1) -----------------------------
@@ -240,6 +364,7 @@ def assemble_report(
     corpus: Corpus,
     sessions_dir_name: str = "",
     sessions_dir: Path | None = None,
+    user_ignore: UserIgnore | None = None,
 ) -> Report:
     """Build a Report from a fully-parsed Corpus.
 
@@ -250,6 +375,11 @@ def assemble_report(
     `sessions_dir`, when provided, is iterated to populate
     `Report.session_titles` (mapping session_id_short → most-recent
     aiTitle). Sessions without an extractable title are omitted.
+
+    `user_ignore`, when provided, is OR'd with the built-in noise filter at
+    the per-path seam below — hiding additional paths from `report.files`
+    WITHOUT affecting the already-computed corpus/session baselines. Build it
+    with `build_user_ignore(find_ignore_file(), cli_patterns)`.
     """
     expanded_excerpts_per_session = _expand_excerpts(corpus)
     interesting_files = _interesting_files(corpus, expanded_excerpts_per_session)
@@ -262,7 +392,7 @@ def assemble_report(
 
     files: list[FileFriction] = []
     for path in sorted(interesting_files):
-        if _is_ignored(path):
+        if _is_ignored(path) or (user_ignore is not None and user_ignore.matches(path)):
             continue
         complexity = compute_file_complexity(path)
         leakage = corpus.leakage_by_file.get(path, LeakageCounts())

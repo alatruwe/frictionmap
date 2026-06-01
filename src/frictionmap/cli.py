@@ -9,7 +9,15 @@ from frictionmap import __version__
 from frictionmap.baselines import save_baseline_cache
 from frictionmap.parser import parse_sessions
 from frictionmap.render import load_template_assets, render_report
-from frictionmap.report import assemble_report, derive_strip_root, relativize_report
+from frictionmap.report import (
+    IGNORE_FILENAME,
+    assemble_report,
+    build_user_ignore,
+    count_likely_noise_in_top,
+    derive_strip_root,
+    find_ignore_file,
+    relativize_report,
+)
 from frictionmap.sessions import (
     find_active_sessions,
     format_relative_time,
@@ -65,10 +73,12 @@ def _cmd_scan(args: argparse.Namespace) -> int:
     sessions_dir = resolve_sessions_dir()
     reset_boundary_clip_count()
     corpus = parse_sessions(sessions_dir)
+    user_ignore = build_user_ignore(find_ignore_file(), args.ignore)
     report = assemble_report(
         corpus,
         sessions_dir_name=sessions_dir.name,
         sessions_dir=sessions_dir,
+        user_ignore=user_ignore,
     )
     # Relativize for display BEFORE render and BEFORE --checkpoint: strips the
     # machine-identifying absolute paths out of the payload and every terminal
@@ -88,6 +98,12 @@ def _cmd_scan(args: argparse.Namespace) -> int:
         f"{len(report.files)} files with friction signals. "
         f"Report: report.html"
     )
+    noise = count_likely_noise_in_top(report.files)
+    if noise >= 2:  # calmer threshold — a lone survivor shouldn't nudge
+        print(
+            f"Note: {noise} of your top-{min(len(report.files), 20)} files match common "
+            f"generated/vendored patterns. Add them to {IGNORE_FILENAME} to filter."
+        )
     if args.checkpoint or os.environ.get("FRICTIONMAP_CHECKPOINT") == "1":
         _print_checkpoint(corpus, report)
     return 0
@@ -287,6 +303,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--checkpoint",
         action="store_true",
         help="Print Phase 3 diagnostic checkpoint after scanning.",
+    )
+    scan.add_argument(
+        "--ignore",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="Add a gitignore-style pattern to ignore (repeatable). "
+             f"Stacks with {IGNORE_FILENAME} and the built-in defaults.",
     )
     scan.set_defaults(func=_cmd_scan)
 
