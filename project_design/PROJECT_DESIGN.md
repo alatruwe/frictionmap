@@ -2,13 +2,15 @@
 
 Product design, scope, mechanism, and timeline. Separate from PROJECT_INSTRUCTIONS.md, which is about how Claude and Adeline work together on it.
 
-> **Status note (added after the fact).** Milestone 2 — the debugger — was cut on May 30,
-> 2026, after a practical utility evaluation. Phase 5b shipped; nothing is sequenced after
-> it in v1. Future work is the v2 validation study, tracked separately.
+> **Status note (added after the fact).** Of the three milestones planned below, only
+> Milestone 1 shipped. Milestone 2 — the debugger — was cut on May 30, 2026, after a
+> practical utility evaluation. Milestone 3 — the `/friction` skill — was cut from scope
+> entirely. Phase 5b shipped; nothing is sequenced after it in v1. Future work is the v2
+> validation study, tracked separately.
 >
 > Everything below is preserved as the design record as written, including the Milestone 2
-> specs and the ordering rationale. Read the milestone sequencing as history, not as the
-> current plan.
+> and Milestone 3 specs and the ordering rationale. Read the milestone sequencing as
+> history, not as the current plan.
 
 ## The product
 
@@ -17,8 +19,8 @@ A CLI tool that parses Claude Code session logs (from `~/.claude/projects/` or a
 Three product surfaces ship in three milestones:
 
 1. **Friction map (Milestone 1)** — `ai-friction-map scan` produces a self-contained interactive HTML report scoring every file in a codebase by how much friction Claude Code experienced working with it, across all historical sessions. Plus `ai-friction-map session <id>` produces a terminal summary of a specific session for quick diagnostic readout.
-2. **Debugger (Milestone 2)** — `ai-friction-map session <id>` gains an HTML output (`session-<id>.html`) that surfaces a turn-ordered timeline of one session: user prompts as anchors, Claude's responses (thinking blocks with marker highlighting, tool calls, text) rendered inline, friction signals visible where they fired. Different schema slice from the friction map (Turn structure, ordered blocks, timestamps); different design problem; different product surface.
-3. **Skill (Milestone 3)** — Claude Code skill `/friction` with three subcommands wrapping both views. `/friction scan`, `/friction active`, `/friction session`. The session subcommand returns terminal summary inline in chat plus a path to the debugger HTML.
+2. **Debugger (Milestone 2)** — *cut, see status note* — `ai-friction-map session <id>` gains an HTML output (`session-<id>.html`) that surfaces a turn-ordered timeline of one session: user prompts as anchors, Claude's responses (thinking blocks with marker highlighting, tool calls, text) rendered inline, friction signals visible where they fired. Different schema slice from the friction map (Turn structure, ordered blocks, timestamps); different design problem; different product surface.
+3. **Skill (Milestone 3)** — *cut, see status note* — Claude Code skill `/friction` with three subcommands wrapping both views. `/friction scan`, `/friction active`, `/friction session`. The session subcommand returns terminal summary inline in chat plus a path to the debugger HTML.
 
 Friction map and debugger are both powered by the same parser. They differ in what they surface: the map answers "where in the codebase does Claude get tangled?" by aggregating across sessions; the debugger answers "what happened in this session, turn by turn?" by rendering one session's events in time order.
 
@@ -167,12 +169,12 @@ Documented in README under "Known limits," not engineered around for v1:
 
 **Three milestones on a self-imposed timeline. No external deadline; ship each when ready.**
 
-*(Milestone 2 was later cut — see the status note at the top of this file. The sequencing
-below is the plan as it stood, kept as a record.)*
+*(Milestones 2 and 3 were both later cut — see the status note at the top of this file.
+Only Milestone 1 shipped. The sequencing below is the plan as it stood, kept as a record.)*
 
 - **Milestone 1 — Friction map.** CLI `ai-friction-map scan` produces an interactive HTML report of corpus-wide friction. CLI `ai-friction-map session <id>` produces a terminal summary for a specific session. Plus `active-sessions` for discovery. Shareable HTML, no backend. Original target was Sunday April 26; that target was self-imposed and is non-binding.
-- **Milestone 2 — Debugger.** CLI `ai-friction-map session <id>` adds an HTML output (`session-<id>.html`) with turn-ordered timeline, marker-highlighted thinking-block reading view, files-touched filter. Schema bump (1.3) for Turn structure with user prompts and ordered blocks. Builds on Milestone 1's parser; no changes to corpus view.
-- **Milestone 3 — Skill.** `/friction` Claude Code skill with three subcommands. `scan`, `active`, `session`. Wraps the existing CLI; the session subcommand returns terminal summary inline plus HTML link. Recursive demo possible (`/friction scan` analyzing this project's own sessions).
+- **Milestone 2 — Debugger.** *(Cut.)* CLI `ai-friction-map session <id>` adds an HTML output (`session-<id>.html`) with turn-ordered timeline, marker-highlighted thinking-block reading view, files-touched filter. Schema bump (1.3) for Turn structure with user prompts and ordered blocks. Builds on Milestone 1's parser; no changes to corpus view.
+- **Milestone 3 — Skill.** *(Cut.)* `/friction` Claude Code skill with three subcommands. `scan`, `active`, `session`. Wraps the existing CLI; the session subcommand returns terminal summary inline plus HTML link. Recursive demo possible (`/friction scan` analyzing this project's own sessions).
 
 **Why this ordering.** The friction map is the project's central claim — "find friction surfaces in your codebase by aggregating across sessions." That's the wedge for any future expansion. Ship the claim first. The debugger is a strong second product surface that benefits from its own milestone with full design attention; folding it into Milestone 1 would dilute both. The skill ships last because it wraps both views — wrapping at Milestone 2 would leave the skill incomplete relative to the surfaces available.
 
