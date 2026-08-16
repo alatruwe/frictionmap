@@ -81,11 +81,13 @@ The report picks one of four modes based on what the data surfaces.
 
 ## Roadmap
 
-- **v2 — transfer to autonomous agents.** Do v1's deterministic signals transfer from
-  interactive Claude Code sessions to autonomous agent trajectories (SWE-bench Verified),
-  and do they add information beyond action-sequence encodings?
-- **v2 — LLM-as-judge layer.** A pre-registered validation study: can an LLM judge score
-  friction in reasoning traces reliably, validated against blind human labels?
+- **v2 — friction maps for autonomous agents.** Extend FrictionMap beyond interactive
+  Claude Code sessions to autonomous agent trajectories (SWE-bench Verified) — the same
+  file-level friction view for agent runs. Gated on a transfer study: do v1's signals
+  carry over, and do they add information beyond action-sequence encodings?
+- **v2 — semantic friction scoring.** An LLM-judge layer scoring friction in reasoning
+  traces directly, beyond v1's deterministic counting. Gated on a pre-registered
+  validation study against blind human labels.
 - **Multi-agent support.** Adapters for Codex, Aider, Cursor, and other agents. Driven
   by demand — open an issue if you'd use this on non-Claude sessions.
 
