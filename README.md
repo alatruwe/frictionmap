@@ -81,8 +81,13 @@ The report picks one of four modes based on what the data surfaces.
 
 ## Roadmap
 
-- **Milestone 2 — Debugger.** `frictionmap session <id>` gains a `session-<id>.html` output: turn-ordered timeline, marker-highlighted thinking-block reading view, files-touched filter.
-- **Multi-agent support.** Adapters for Codex, Aider, Cursor, and other agents. Driven by demand — open an issue if you'd use this on non-Claude sessions.
+- **v2 — transfer to autonomous agents.** Do v1's deterministic signals transfer from
+  interactive Claude Code sessions to autonomous agent trajectories (SWE-bench Verified),
+  and do they add information beyond action-sequence encodings?
+- **v2 — LLM-as-judge layer.** A pre-registered validation study: can an LLM judge score
+  friction in reasoning traces reliably, validated against blind human labels?
+- **Multi-agent support.** Adapters for Codex, Aider, Cursor, and other agents. Driven
+  by demand — open an issue if you'd use this on non-Claude sessions.
 
 ## Caveats
 
@@ -90,8 +95,17 @@ The report picks one of four modes based on what the data surfaces.
 - **Claude Code retains session JSONL for roughly 30 days by default.** The report covers what's on disk; older sessions are not recoverable.
 - **Large monorepos.** The HTML file-tree view can feel sluggish on very large codebases. Mid-size repos work cleanly.
 
-For the curious, see [`project_design/HOW_IT_WORKS.md`](project_design/HOW_IT_WORKS.md) for more details on how the scoring function works, what it deliberately doesn't measure, and the methodological caveats.  
-The `project_design/` folder also contains the design documents from the build: scope, trade-offs, tested assumptions, ecosystem framing, and the parser-to-report data contract.
+## Methodology & writing
+
+See [`project_design/HOW_IT_WORKS.md`](project_design/HOW_IT_WORKS.md) for how the scoring
+function works, what it deliberately doesn't measure, and the methodological caveats.
+The `project_design/` folder contains the design documents from the build: scope,
+trade-offs, tested assumptions, ecosystem framing, and the parser-to-report data contract.
+
+Two essays document the calibration methodology and findings:
+
+- **[The craft of proxy measurement](https://thecognitivestack.substack.com/p/the-craft-of-proxy-measurement)** — how the v1 signals were calibrated, and why eight of eleven signals are parked at weight 0 with documented handoff records rather than dropped.
+- **[Friction in AI coding sessions: what the data shows](https://thecognitivestack.substack.com/p/friction-in-ai-coding-sessions)** — findings from running FrictionMap on the reference corpora.
 
 ## License
 
