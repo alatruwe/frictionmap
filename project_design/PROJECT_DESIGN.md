@@ -5,8 +5,8 @@ Product design, scope, mechanism, and timeline. Separate from PROJECT_INSTRUCTIO
 > **Status note (added August 2026).** Of the three milestones planned below, only
 > Milestone 1 shipped. Milestone 2 — the debugger — was cut on May 30, 2026, after a
 > practical utility evaluation. Milestone 3 — the `/friction` skill — was cut from scope
-> entirely. Phase 5b shipped; nothing is sequenced after it in v1. Future work is the v2
-> validation study, tracked separately.
+> entirely in June 2026. Phase 5b shipped; nothing is sequenced after it in v1. Future
+> work is the v2 validation study, tracked separately.
 >
 > Everything below is preserved as the design record as written, including the Milestone 2
 > and Milestone 3 specs and the ordering rationale. Read the milestone sequencing as
