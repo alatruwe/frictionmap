@@ -2,7 +2,7 @@
 
 Product design, scope, mechanism, and timeline. Separate from PROJECT_INSTRUCTIONS.md, which is about how Claude and Adeline work together on it.
 
-> **Status note (added after the fact).** Of the three milestones planned below, only
+> **Status note (added August 2026).** Of the three milestones planned below, only
 > Milestone 1 shipped. Milestone 2 — the debugger — was cut on May 30, 2026, after a
 > practical utility evaluation. Milestone 3 — the `/friction` skill — was cut from scope
 > entirely. Phase 5b shipped; nothing is sequenced after it in v1. Future work is the v2
