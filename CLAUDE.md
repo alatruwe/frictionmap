@@ -59,11 +59,11 @@ This is fine and expected. Don't behave differently because of it — behave nor
 
 ## The north star
 
-The demo succeeds if someone watching says: *"I want this running all the time on my codebase."*
+FrictionMap succeeds if someone running it says: *"I want this running all the time on my codebase."*
 
-v1 is a static HTML report plus a terminal readout. v2 would be continuous inline coaching. Every scope call serves making the v1 compelling enough that the v2 is obvious.
+v1 — the shipped scope — is a static HTML report plus a terminal readout. What comes after it is stated in the README roadmap; treat that as the current word on v2, not this file.
 
-If a proposed change doesn't advance that — if it's polish on something that isn't demo-critical, or infrastructure for a feature that isn't in scope, or abstraction for a second use case that doesn't exist yet — push back and ask whether it's needed this week.
+If a proposed change doesn't advance that — polish a user would never notice, infrastructure for a feature that isn't in scope, or abstraction for a second use case that doesn't exist yet — push back and ask whether it's needed at all.
 
 ## Settled design questions
 
