@@ -2,6 +2,14 @@
 
 Product design, scope, mechanism, and timeline. Separate from PROJECT_INSTRUCTIONS.md, which is about how Claude and Adeline work together on it.
 
+> **Status note (added after the fact).** Milestone 2 — the debugger — was cut on May 30,
+> 2026, after a practical utility evaluation. Phase 5b shipped; nothing is sequenced after
+> it in v1. Future work is the v2 validation study, tracked separately.
+>
+> Everything below is preserved as the design record as written, including the Milestone 2
+> specs and the ordering rationale. Read the milestone sequencing as history, not as the
+> current plan.
+
 ## The product
 
 A CLI tool that parses Claude Code session logs (from `~/.claude/projects/` or a user-supplied directory) and produces friction analysis at two scopes — corpus-wide (the friction map) and per-session (the debugger).
@@ -158,6 +166,9 @@ Documented in README under "Known limits," not engineered around for v1:
 ## Timeline and parallelization
 
 **Three milestones on a self-imposed timeline. No external deadline; ship each when ready.**
+
+*(Milestone 2 was later cut — see the status note at the top of this file. The sequencing
+below is the plan as it stood, kept as a record.)*
 
 - **Milestone 1 — Friction map.** CLI `ai-friction-map scan` produces an interactive HTML report of corpus-wide friction. CLI `ai-friction-map session <id>` produces a terminal summary for a specific session. Plus `active-sessions` for discovery. Shareable HTML, no backend. Original target was Sunday April 26; that target was self-imposed and is non-binding.
 - **Milestone 2 — Debugger.** CLI `ai-friction-map session <id>` adds an HTML output (`session-<id>.html`) with turn-ordered timeline, marker-highlighted thinking-block reading view, files-touched filter. Schema bump (1.3) for Turn structure with user prompts and ordered blocks. Builds on Milestone 1's parser; no changes to corpus view.
