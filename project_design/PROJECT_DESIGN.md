@@ -14,7 +14,7 @@ Product design, scope, mechanism, and timeline. Separate from PROJECT_INSTRUCTIO
 
 ## The product
 
-A CLI tool that parses Claude Code session logs (from `~/.claude/projects/` or a user-supplied directory) and produces friction analysis at two scopes — corpus-wide (the friction map) and per-session (the debugger).
+A CLI tool that parses Claude Code session logs (from `~/.claude/projects/` or a user-supplied directory) and produces friction analysis at two scopes — corpus-wide (the friction map) and per-session (terminal session summary).
 
 Three product surfaces ship in three milestones:
 

@@ -4,15 +4,17 @@ Session protocol for Claude Code working in this repo. Read at the start of ever
 
 ## What this project is
 
-**ai-friction-map** — a CLI tool that parses Claude Code session logs and produces an interactive HTML heatmap showing which files in a codebase the model experiences the most friction with. Built for the "Built with Opus 4.7" Claude Code hackathon (April 21–27, 2026).
+**ai-friction-map** — a CLI tool that parses Claude Code session logs and produces an interactive HTML heatmap showing which files in a codebase the model experiences the most friction with.
 
 The signal set: re-evaluation markers ("wait," "actually," "let me reconsider") detected in thinking blocks, plus structural signals (block length, question rate, tool-use coupling, length trend), plus behavioral signals (re-read bursts, edit churn). Every signal is per-file attributed via a co-location rule — a thinking-block file mention counts only if that file is also touched by a tool call in the same session.
 
-Details: the Claude Desktop project this repo is paired with has PROJECT_DESIGN.md, ASSUMPTIONS.md, and IMPLEMENTATION.md. Those are the source of truth for product design, validated assumptions, and phase tracking. They live outside the repo. When Adeline hands off a task, the spec will reference the concepts defined there.
+Details: `project_design/` in this repo holds PROJECT_DESIGN.md, ASSUMPTIONS.md, HOW_IT_WORKS.md, TRADEOFFS.md, ECOSYSTEM.md, and schema.md — the source of truth for product design, validated assumptions, and the parked-signal rationale. Phase tracking (IMPLEMENTATION.md) lives outside the repo in the paired Claude Desktop project. When Adeline hands off a task, the spec will reference the concepts defined there.
+
+Note that the design docs are a point-in-time record, not a current plan. PROJECT_DESIGN.md carries a status note explaining what it now over-describes: of the three milestones it sequences, only Milestone 1 shipped. Milestone 2 (the per-session debugger HTML) and Milestone 3 (the `/friction` skill) were both cut. Neither is coming back in v1 — don't pick up work that assumes them.
 
 ## What's in the repo right now
 
-Check `IMPLEMENTATION.md` (when it lands in the repo) or ask Adeline where the project is. In the first day or two, the scaffolding is all that exists — a CLI that prints stub output. By mid-week, the parser and scoring function land. By weekend, the HTML report and the `/friction` skill.
+v1 has shipped: `frictionmap scan` (corpus HTML report), `frictionmap session <id>` (terminal summary), and `frictionmap active-sessions`. Nothing is sequenced after Phase 5b in v1; future work is the v2 validation study, tracked separately. Ask Adeline before starting anything that isn't a fix to shipped behavior.
 
 If you're uncertain what phase the project is in, run:
 ```bash
@@ -67,7 +69,6 @@ If a proposed change doesn't advance that — if it's polish on something that i
 
 These are named so you don't rediscover them:
 
-- **Skill context discovery.** When `/friction` is invoked as a Claude Code skill, does the skill runtime expose which session invoked it? Investigation task in Phase 2. If the answer is no, the skill takes an explicit identifier argument.
 - **Marker lexicon calibration.** The starting lexicon ("wait," "actually," "let me reconsider," etc.) is a committed hypothesis. Thursday hand-tagging validates or revises it. Don't pre-optimize the lexicon in code — it's meant to be swappable.
 - **Re-read window size.** Burst re-read detection needs a turn-window parameter. Thursday tuning task. Start with a reasonable default (3 or 5 turns); don't bake the constant into multiple places.
 - **Normalization strategy.** Per-file scores divided by file size or LOC to avoid "big file = hot" artifacts. Exact form TBD during Phase 3 scoring work.
