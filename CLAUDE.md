@@ -4,7 +4,7 @@ Session protocol for Claude Code working in this repo. Read at the start of ever
 
 ## What this project is
 
-**ai-friction-map** — a CLI tool that parses Claude Code session logs and produces an interactive HTML heatmap showing which files in a codebase the model experiences the most friction with.
+**FrictionMap** — a CLI tool that parses Claude Code session logs and produces an interactive HTML heatmap showing which files in a codebase the model experiences the most friction with.
 
 The signal set: re-evaluation markers ("wait," "actually," "let me reconsider") detected in thinking blocks, plus structural signals (block length, question rate, tool-use coupling, length trend), plus behavioral signals (re-read bursts, edit churn). Every signal is per-file attributed via a co-location rule — a thinking-block file mention counts only if that file is also touched by a tool call in the same session.
 
@@ -18,9 +18,9 @@ v1 has shipped: `frictionmap scan` (corpus HTML report), `frictionmap session <i
 
 If you're uncertain what phase the project is in, run:
 ```bash
-ai-friction-map --version
+frictionmap --version
 ```
-and inspect `src/ai_friction_map/`. The code is the ground truth for what exists.
+and inspect `src/frictionmap/`. The code is the ground truth for what exists.
 
 ## How Adeline works
 
@@ -52,7 +52,7 @@ This is fine and expected. Don't behave differently because of it — behave nor
 - **Python 3.11+.** Modern type hints (`dict[str, int]`, `Path | None`).
 - **Standard library first.** No runtime dependencies added without a concrete reason. If you want to reach for a library, check whether stdlib covers it.
 - **Hatchling build backend.** Don't convert to setuptools unless there's a real incompatibility.
-- **Package name:** `ai_friction_map` (underscored, Python). **CLI command:** `ai-friction-map` (hyphenated, user-facing). Don't "fix" the inconsistency — Python requires it.
+- **Naming:** package `frictionmap` (`src/frictionmap/`), CLI command `frictionmap`, product name FrictionMap. Renamed from `ai_friction_map`/`ai-friction-map` on April 29, 2026; the repo directory is still `ai-friction-map` and that's fine — don't "fix" it.
 - **Remote:** `origin` is `github.com/alatruwe/frictionmap`.
 - **Branch + PR for everything.** All changes go on a new branch and ship as a pull request for review — never commit or push directly to `main`. Name the branch for the work (`fix-...`, `docs-...`, etc.), commit there, push, and open a PR against `main`. This holds even for small or doc-only changes.
 - **Commit messages:** conventional-commit style (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`). One concern per commit.
@@ -65,13 +65,13 @@ v1 is a static HTML report plus a terminal readout. v2 would be continuous inlin
 
 If a proposed change doesn't advance that — if it's polish on something that isn't demo-critical, or infrastructure for a feature that isn't in scope, or abstraction for a second use case that doesn't exist yet — push back and ask whether it's needed this week.
 
-## Open questions the project knows about
+## Settled design questions
 
-These are named so you don't rediscover them:
-
-- **Marker lexicon calibration.** The starting lexicon ("wait," "actually," "let me reconsider," etc.) is a committed hypothesis. Thursday hand-tagging validates or revises it. Don't pre-optimize the lexicon in code — it's meant to be swappable.
-- **Re-read window size.** Burst re-read detection needs a turn-window parameter. Thursday tuning task. Start with a reasonable default (3 or 5 turns); don't bake the constant into multiple places.
-- **Normalization strategy.** Per-file scores divided by file size or LOC to avoid "big file = hot" artifacts. Exact form TBD during Phase 3 scoring work.
+Marker lexicon calibration, re-read window size, and score normalization were all open
+during the build and are now resolved. Don't reopen them from first principles — the
+answers and their rationale live in `project_design/HOW_IT_WORKS.md` and
+`project_design/TRADEOFFS.md`. Read those before changing the lexicon, the window
+parameter, or the normalization form.
 
 ## Parked scoring signals
 
