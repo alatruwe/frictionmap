@@ -23,6 +23,10 @@ packages = ["src/frictionmap"]
 
 [tool.ruff]
 line-length = 120
+# Research scripts, copied verbatim as a record of what was run. Not library
+# code, and their value depends on matching what executed — so they are kept
+# out of the style gate rather than edited to satisfy it.
+extend-exclude = ["methodology"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
