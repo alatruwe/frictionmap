@@ -96,7 +96,7 @@ Format per signal: prediction (transfers / degrades / cannot transfer), mechanis
 | complexity normalization | **Cannot transfer** — reads on-disk file content; no local checkout for leaderboard repos | Known (C7) | — |
 | 8 parked signals | Out of scope for v2; remain parked | — | — |
 
-**Recon findings (recorded 2026-08-16, corrected same day after raw-event verification; full record incl. correction log in `swe-bench-recon-stage3-findings.md`):** 2 trajectories per agent inspected, 19/19 agents, cross-file format consistency verified. Read/edit action substrate present 19/19 (15 structured tool calls; 2 pseudo-XML regex; 1 bash-fence regex; 1 inferable from labeled tool results). An initial five-class reasoning taxonomy (A–E) was falsified in three cells by raw-event inspection and rebuilt on two properties: whether text is **designated as reasoning** by the agent's format (extraction = counting, not interpretation) and whether the channel is **private or public narration**:
+**Recon findings (recorded 2026-08-16, corrected same day after raw-event verification; full record incl. correction log in `swe-bench-recon.md`):** 2 trajectories per agent inspected, 19/19 agents, cross-file format consistency verified. Read/edit action substrate present 19/19 (15 structured tool calls; 2 pseudo-XML regex; 1 bash-fence regex; 1 inferable from labeled tool results). An initial five-class reasoning taxonomy (A–E) was falsified in three cells by raw-event inspection and rebuilt on two properties: whether text is **designated as reasoning** by the agent's format (extraction = counting, not interpretation) and whether the channel is **private or public narration**:
 
 | Substrate | Agents | Count |
 |---|---|---|
@@ -147,7 +147,7 @@ Each is a finding, published as stated:
 - [x] All DECISION items resolved (session 2026-08-15; judge model + cost via budget handoff)
 - [x] Escalation rule, band composition, self-preference specificity, label-reuse clause reconciled (session 2026-08-15)
 - [x] Cost-rule model reference fixed (§7: validated judge model's rates, not Haiku unconditionally); ordering check replaced with by-construction note (§5)
-- [x] Recon step run; findings recorded in §6 (2026-08-16; initial taxonomy corrected same day via raw-event verification; BINDING 13-agent designated-substrate population; full record in `swe-bench-recon-stage3-findings.md`)
+- [x] Recon step run; findings recorded in §6 (2026-08-16; initial taxonomy corrected same day via raw-event verification; BINDING 13-agent designated-substrate population; full record in `swe-bench-recon.md`)
 - [x] v1 commit hash pinned (§2) — `e2d6db2`, 2026-08-16
 - [x] Corpus hash manifest generated + committed (§3) — `corpus-manifest.txt`, 147 session files (66 attune + 81 brownfield), 2026-08-16
 - [ ] Labeling rubric + anchor examples written (§4.1)
