@@ -104,6 +104,8 @@ function works, what it deliberately doesn't measure, and the methodological cav
 The `project_design/` folder contains the design documents from the build: scope,
 trade-offs, tested assumptions, ecosystem framing, and the parser-to-report data contract.
 
+Research methodology for the v2 judge study — pre-registration, cost budget, and SWE-bench trajectory recon — lives in [methodology/](methodology/).
+
 Two essays document the calibration methodology and findings:
 
 - **[The craft of proxy measurement](https://thecognitivestack.substack.com/p/the-craft-of-proxy-measurement)** — how the v1 signals were calibrated, and why eight of eleven signals are parked at weight 0 with documented handoff records rather than dropped.
