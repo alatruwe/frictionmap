@@ -42,7 +42,7 @@ The threshold is committed before the script runs. Whichever branch fires, the n
 
 ## 3. Corpora and sampling
 
-- **Own corpus:** all sessions currently in the attune and brownfield session folders — the same corpus set v1 calibration ran on. Corpus identity is fixed by a **committed hash manifest** (file list + hashes) generated at freeze; no sessions are added during the study. Unit count reported before labeling begins (one bash pass, same task as the manifest; the count is descriptive, not a selection criterion). Known pool at drafting time: ~645 attributed thinking blocks (attune) + ~466 (brownfield) ≈ 1,100, of which ~375 marker-positive.
+- **Own corpus:** The corpus is all sessions in the two v1 calibration corpora (attune, brownfield); no session-level selection. Session files are not part of this repository. Corpus identity is fixed by a committed hash manifest (methodology/corpus-manifest.txt: relative path + SHA-256 per session file) generated at freeze; no sessions are added, removed, or modified during the study — any change is detectable against the manifest. Unit count reported before labeling begins (same bash pass as the manifest; the count is descriptive, not a selection criterion). Known pool at drafting time: ~645 attributed thinking blocks (attune) + ~466 (brownfield) ≈ 1,100, of which ~375 marker-positive.
 - **Validation sample:** N = 100 units for hand-labeling, stratified: 50 sampled uniformly at random, 50 oversampled from units with `markers_per_100w > 0` (a purely random sample of a calm corpus risks labeling 95 smooth blocks and starving the agreement statistic). Sampled pooled across both corpora; **corpus identity recorded per unit**. Sampling script committed before labels are assigned.
 - **Leaderboard bucket:** SWE-bench Verified public trajectory bucket (~9,374 trajectories, 19 agents, 14 LLMs, 500 tasks), same dataset as arXiv 2604.02547.
 
@@ -149,7 +149,7 @@ Each is a finding, published as stated:
 - [x] Cost-rule model reference fixed (§7: validated judge model's rates, not Haiku unconditionally); ordering check replaced with by-construction note (§5)
 - [x] Recon step run; findings recorded in §6 (2026-08-16; initial taxonomy corrected same day via raw-event verification; BINDING 13-agent designated-substrate population; full record in `swe-bench-recon-stage3-findings.md`)
 - [x] v1 commit hash pinned (§2) — `e2d6db2`, 2026-08-16
-- [ ] Corpus hash manifest generated + committed (§3)
+- [x] Corpus hash manifest generated + committed (§3) — `corpus-manifest.txt`, 147 session files (66 attune + 81 brownfield), 2026-08-16
 - [ ] Labeling rubric + anchor examples written (§4.1)
 - [ ] Sampling script committed (§3, includes Q1 split seed per §7)
 - [ ] Judge prompt v1 + 2 paraphrases committed to `judge-prompts/` (§5)
