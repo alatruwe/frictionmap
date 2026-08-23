@@ -46,3 +46,9 @@ this-project-started-with-polymorphic-rossum.md
 # v2 anchor-hunting dump (raw session text — never commit)
 anchor_candidates.md
 anchor_sessions/
+
+# v2 validation sample (raw session text + sealed assignments — never commit;
+# sample-manifest.csv is committed only after labels are, per pre-reg §4)
+labeling-sheet.md
+sample-manifest.csv
+reserve-list.md
