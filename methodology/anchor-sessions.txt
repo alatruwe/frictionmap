@@ -1,3 +1,8 @@
 # Sessions excluded from the v2 validation sampling pool. Includes all sessions displayed during anchor selection, not only sessions anchors were drawn from. Pre-registration §4.
 3ec85b0a-3b67-48da-abe7-023125456cb3
 9eb36936-b91d-494e-9858-eea64edc529d
+19440298-b583-483b-b8a0-bb2bdefa321a
+0d71f58b-5237-4dad-955a-56a4abc19ffc
+6c8d3673-d221-455e-8762-795f0a6207e5
+203ca344-0ca6-40b8-b090-8344ac5bf9ac
+2af8774c-83c0-4a2c-b17d-32bb4f14dadc
