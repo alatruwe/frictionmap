@@ -150,7 +150,7 @@ Each is a finding, published as stated:
 - [x] Recon step run; findings recorded in §6 (2026-08-16; initial taxonomy corrected same day via raw-event verification; BINDING 13-agent designated-substrate population; full record in `swe-bench-recon.md`)
 - [x] v1 commit hash pinned (§2) — `e2d6db2`, 2026-08-16
 - [x] Corpus hash manifest generated + committed (§3) — `corpus-manifest.txt`, 147 session files (66 attune + 81 brownfield), 2026-08-16
-- [ ] Labeling rubric + anchor examples written (§4.1)
+- [x] Labeling rubric + anchor examples written (§4.1) — `labeling-rubric.md` + `anchor-sessions.txt`, 2026-08-23
 - [ ] Sampling script committed (§3, includes Q1 split seed per §7)
 - [ ] Judge prompt v1 + 2 paraphrases committed to `judge-prompts/` (§5)
 - [x] cost-budget.md reconciled (Luna row cut; task count = 500; escalation math restated at C = $250 incl. Sonnet re-validation; boundary formula corrected; decision-rule step 3 references the validated judge model's rates) (§5, §7)
