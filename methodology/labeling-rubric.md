@@ -224,8 +224,11 @@ I should let the ceiling check finish since that's the primary finding, then adj
   calibration is attune-shaped even though labeling is pooled across both.
 - Candidate sessions are located via **session-level marker density** (marker-positive
   thinking blocks ÷ total thinking blocks per session), by
-  `methodology/scripts/dump_anchor_candidates.py`. Density selects *sessions to read*,
-  not blocks to anchor; the anchor choice within a session is made by reading the text.
+  `methodology/scripts/dump_anchor_candidates.py`; the thinking text actually read for
+  anchor selection was rendered one session at a time by
+  `methodology/scripts/dump_session.py`, which also appends every session it displays to
+  the exclusion list. Density selects *sessions to read*, not blocks to anchor; the
+  anchor choice within a session is made by reading the text.
 - **All sessions displayed during anchor selection are excluded from the validation
   sampling pool**, whether or not an anchor was ultimately chosen from them. The
   exclusion list is `methodology/anchor-sessions.txt` and the sampling script (§3) must
