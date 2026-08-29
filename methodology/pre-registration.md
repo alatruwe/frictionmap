@@ -1,6 +1,6 @@
 # FrictionMap v2 — Pre-Registration
 
-Status: DRAFT — pre-freeze. This document becomes binding at git tag v2-prereg-freeze. Until that tag exists, edits are permitted; after it, changes only via amendment noted in §9.
+Status: FROZEN at git tag v2-prereg-freeze (2026-08-29). Sections 2–8 are binding; changes only via §9 deviations log.
 **Freeze rule:** after freeze, no edits to Sections 2–8. Deviations during the study are logged in Section 9 as deviations, with rationale, not absorbed silently.
 **Scope gate (fixed in advance):** v2 is done when (a) the judge is validated or fails validation on my own corpus per Section 5, and (b) the stratification study produces a result in either direction per Section 7. Null results close the project successfully.
 
@@ -158,4 +158,4 @@ Each is a finding, published as stated:
 - [x] cost-budget.md reconciled (Luna row cut; task count = 500; escalation math restated at C = $250 incl. Sonnet re-validation; boundary formula corrected; decision-rule step 3 references the validated judge model's rates) (§5, §7); recomputed at S=3,000/output=100/13-agent count, caching removed, Sonnet 5 escalation (2026-08-29)
 - [x] cost-budget.md committed to public repo — 2026-08-29
 - [x] This doc committed to public repo — 2026-08-29
-- [ ] Freeze commit: DRAFT → FROZEN, tagged `v2-prereg-freeze` (that commit hash is the freeze timestamp)
+- [x] Freeze commit: DRAFT → FROZEN, tagged `v2-prereg-freeze` — 2026-08-29
