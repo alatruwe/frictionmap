@@ -16,16 +16,18 @@ Prompt caching (scaffold cached at ~10% of input rate) stacks with batch per ven
 
 | Parameter | Value | Basis |
 |---|---|---|
-| Prompt scaffold (rubric + instructions) | 500 tok | estimate; measure at freeze |
-| Output (digit + one-line justification) | 40 tok | estimate |
+| Prompt scaffold (rubric + instructions) | 2,500 tok | drafted prompts, anchors included; exact count at freeze |
+| Output (digit + one-line justification) | ~100 tok | justification-then-score ordering |
 | Own-corpus block | ~90 tok | median 60–70 words × ~1.3 tok/word |
 | SWE-bench block **B** | 100 / 300 / 800 tok | unknown until adapter exists; low/mid/high |
 | Units per trajectory **U** | 10 / 40 / 100 | unknown until adapter exists; low/mid/high |
 | Trajectories | 9,374 | fixed (bucket) |
 | Tasks in bucket | 500 | published constant (SWE-bench Verified) |
 
-Per-call cost formula: `calls × [(500 + B)/1e6 × input_rate + 40/1e6 × output_rate]`.
-Cost is linear in both U and (500 + B). B is a second unknown the §7 decision must wait on, same as U.
+Per-call cost formula: `calls × [(S + B)/1e6 × input_rate + 100/1e6 × output_rate]`.
+Cost is linear in both U and (S + B), S = scaffold. B is a second unknown the §7 decision must wait on, same as U.
+
+Tables (a)–(c) and the boundary figures are computed at S=500, output=40; recompute at freeze. At S≈2,500 the full-bucket branch likely depends on prompt caching — verify cache-read rate and Haiku 4.5's minimum cacheable prompt length at freeze.
 
 ## (a) Validation runs — 500 calls, own corpus
 
