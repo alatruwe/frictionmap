@@ -18,7 +18,7 @@ Escalation model changed from Sonnet 4.6 to Sonnet 5 on 2026-08-29: Sonnet 4.6 i
 
 | Parameter | Value | Basis |
 |---|---|---|
-| Prompt scaffold **S** (system prompt incl. anchors) | 3,000 tok | v1.md system prompt = 2,327 words × ~1.3 tok/word; estimate, exact count recorded at first judge run |
+| Prompt scaffold **S** (system prompt incl. anchors) | 3,000 tok | v1.md lines above `=== USER TURN ===` = 2,327 words by `wc -w` (whole file 2,334) × ~1.3 tok/word; estimate, exact count recorded at first judge run |
 | Output (justification + score) | 100 tok | justification-then-score ordering |
 | Own-corpus block | ~90 tok | median 60–70 words × ~1.3 tok/word |
 | SWE-bench block **B** | 100 / 300 / 800 tok | unknown until adapter exists; low/mid/high |
@@ -76,6 +76,8 @@ Freeze a **rule**, not a branch — U and B are unknown by design until the adap
 5. Else → **subsample** at the largest task count in {200, 100, 50} whose projection fits C, random by task, all 13 population agents per task retained.
 
 Boundary at C = $250, Haiku batch, ~6,500 trajectories: `U × [(S + B)/2 + 250] ≤ ~38,500`. At S = 3,000: B = 300 → U ≤ 20; B = 800 → U ≤ 17. **Expected outcome at mid-mid (U=40, B=300): subsample at 200 tasks (~$198).** Full population fits only at low U. Subsample-at-200 holds up to U ≈ 50.
+
+*Correction note: an earlier draft stated the boundary as "U × (500+B) ≤ ~430,000," which was wrong by roughly 10×; the formula above is the operative one.*
 
 Task count has a floor as well as a ceiling (pre-registration §7). The floor is a power requirement fixed from Phase 1 labeler self-consistency; C yields to it. Under the rule, C is the amount spent by default, not the amount refused above.
 
