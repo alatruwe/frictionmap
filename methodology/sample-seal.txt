@@ -1,0 +1,31 @@
+# FrictionMap v2 validation sample seal — pre-registration §3, §4.
+#
+# Public commitment to a sample whose contents stay local: the four
+# hashed files are gitignored (brownfield text must never be committed),
+# and sample-manifest.csv is committed only after the labels are
+# committed and hashed (§4 step 4). reserve-list.md and relabel-sheet.md
+# stay sealed until their §4 triggers fire. The hashes fix the sample now.
+#
+# Regenerating this file from the same corpus and the same seed
+# reproduces it byte for byte.
+
+seed_validation_sample   18
+seed_q1_split            31
+
+corpus_files_verified    147
+excluded_sessions        7
+excluded_units           129
+pool_units               982
+pool_marker_positive     311
+pool_attune              516
+pool_brownfield          466
+
+n_random                 50
+n_oversample             50
+n_reserve_per_stratum    10
+n_relabel_per_stratum    10
+
+sha256  labeling-sheet.md    f445eb0c152b2b8cc3384e010b008cc4fefe83ff44a5c3539e30a70088829df0
+sha256  sample-manifest.csv  20573e079abfb8e45329855584595dc5c6fbbb6d21c459c14385ec01b88a37e6
+sha256  reserve-list.md      b0925528093071a3200a0ec05c62b64b9d4068c553b1319ff08f0e5369e5f7b8
+sha256  relabel-sheet.md     e95bfa10a5ca9880220f7419398782a308862fca040860ec185f0580b2d24794
