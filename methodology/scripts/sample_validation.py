@@ -123,11 +123,16 @@ def verify_corpus(root: Path) -> int:
 
     No sampling occurs on a corpus that has drifted from the manifest, so
     this runs before anything is parsed and before anything is written.
+
+    Enumerates <corpus>/<id>.jsonl only — the same non-recursive view as v1
+    parse_sessions (glob('*.jsonl') per corpus dir) and as corpus-manifest.txt.
+    Nested files (e.g. <session>/subagents/*.jsonl) are outside the pinned
+    parser's substrate and are neither verified nor sampled.
     """
     expected = read_manifest()
     found = {
         str(path.relative_to(root)): path
-        for path in sorted(root.rglob("*.jsonl"))
+        for path in sorted(root.glob("*/*.jsonl"))
     }
 
     missing = sorted(set(expected) - set(found))
