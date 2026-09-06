@@ -11,7 +11,7 @@ import pytest
 import judge_harness.units as units_mod
 from judge_harness.__main__ import main
 from judge_harness.prompts import load_prompt
-from tests._judge_fakes import VALID, VALID3, FakeJudge, make_corpus
+from tests._judge_fakes import VALID, VALID3, FakeJudge, Kill, make_corpus
 
 
 @pytest.fixture
@@ -72,7 +72,8 @@ def test_dry_run_never_reads_manifest_and_writes_manifest(tmp_path, manifest_tri
     assert set(m["passes"]) == {"v1-pass1", "paraphrase-a"}
     p = m["passes"]["v1-pass1"]
     assert p["calls"] == 2 and p["missing"] == 0 and p["first_response_usage"]["input_tokens"] == 3001
-    assert p["started_at"] and p["ended_at"] and p["latency"]["median_s"] >= 0
+    assert p["started_at"] and p["ended_at"]
+    assert len(p["invocations"]) == 1 and p["invocations"][0]["latency"]["median_s"] >= 0
     assert (run_dir / "v1-pass1" / "scores.csv").exists() and (run_dir / "paraphrase-a" / "scores.csv").exists()
     out = capsys.readouterr().out
     assert "calls=2" in out and "anchor one" not in out
@@ -107,3 +108,29 @@ def test_corpus_drift_fails_before_any_call(tmp_path, capsys):
     judge = FakeJudge([])
     assert main(_argv(root, anchors, manifest, tmp_path / "r", "v1-pass1"), client_factory=lambda: judge) == 1
     assert judge.calls == []
+
+
+def test_resumed_invocation_accumulates_pass_stats(tmp_path, manifest_tripwire):
+    root, anchors, manifest = make_corpus(tmp_path)
+    runs_dir = tmp_path / "judge-runs"
+    killed = FakeJudge([VALID, Kill()])
+    with pytest.raises(Kill):
+        main(_argv(root, anchors, manifest, runs_dir, "v1-pass1"), client_factory=lambda: killed)
+    # the kill happened inside run_pass, before the manifest got a pass entry
+    assert "passes" not in json.loads((runs_dir / "t" / "run-manifest.json").read_text())
+
+    resumed = FakeJudge([VALID3])
+    assert main(_argv(root, anchors, manifest, runs_dir, "v1-pass1"), client_factory=lambda: resumed) == 0
+    p = json.loads((runs_dir / "t" / "run-manifest.json").read_text())["passes"]["v1-pass1"]
+    assert p["calls"] == 1 and p["units_skipped_resume"] == 1 and p["units_completed"] == 1
+    # from the resumed call; the killed invocation never reached the manifest
+    assert p["first_response_usage"]["input_tokens"] == 3001
+    assert len(p["invocations"]) == 1
+
+    # a third invocation with nothing left to do keeps every earlier number
+    idle = FakeJudge([])
+    assert main(_argv(root, anchors, manifest, runs_dir, "v1-pass1"), client_factory=lambda: idle) == 0
+    p = json.loads((runs_dir / "t" / "run-manifest.json").read_text())["passes"]["v1-pass1"]
+    assert p["calls"] == 1 and p["first_response_usage"]["input_tokens"] == 3001
+    assert p["units_skipped_resume"] == 2 and len(p["invocations"]) == 2 and p["invocations"][1]["calls"] == 0
+    assert p["prompt_sha256"] == load_prompt("v1").sha256

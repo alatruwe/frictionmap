@@ -55,6 +55,30 @@ def _validation_units(corpus_root: Path):
     return units
 
 
+COUNTERS = ("units_completed", "calls", "retried", "missing", "infra_retries")
+
+
+def merge_pass_info(existing: dict, new: dict) -> dict:
+    """Accumulate a pass's stats across invocations (resume after a kill or
+    abort). Counters sum; first_response_usage and started_at keep the earliest
+    value; each invocation's own latency/timestamps are appended to
+    `invocations` so nothing measured is lost."""
+    merged = {k: v for k, v in existing.items() if k not in ("aborted_at", "abort_reason")}
+    merged["units_total"] = new["units_total"]
+    merged["units_skipped_resume"] = new["units_skipped_resume"]
+    for key in COUNTERS:
+        merged[key] = existing.get(key, 0) + new[key]
+    merged["first_response_usage"] = existing.get("first_response_usage") or new["first_response_usage"]
+    merged["started_at"] = existing.get("started_at") or new["started_at"]
+    merged["ended_at"] = new["ended_at"]
+    merged["invocations"] = existing.get("invocations", []) + [{
+        "started_at": new["started_at"], "ended_at": new["ended_at"],
+        "calls": new["calls"], "latency": new["latency"],
+    }]
+    merged.pop("latency", None)   # per-invocation latency lives in `invocations`
+    return merged
+
+
 def cmd_run(args: argparse.Namespace, client_factory: Callable[[], object]) -> int:
     run_dir = Path(args.runs_dir) / args.run_id
     corpus_root = Path(args.corpus_root).expanduser()
@@ -104,10 +128,9 @@ def cmd_run(args: argparse.Namespace, client_factory: Callable[[], object]) -> i
                 "abort_reason": str(exc)}}})
             print(f"[{pass_id}] ABORTED: {exc}. Ledger intact; rerun with the same --run-id to resume.")
             return 2
-        info = summary.as_manifest()
+        info = merge_pass_info(read_manifest(run_dir).get("passes", {}).get(pass_id, {}), summary.as_manifest())
         info["prompt"] = prompt.name
         info["prompt_sha256"] = prompt.sha256
-        info.pop("aborted_at", None)
         update_manifest(run_dir, {"passes": {pass_id: info}})
         _, rows, incomplete = render_scores(run_dir, pass_id)
         print(f"[{pass_id}] calls={summary.calls} completed={summary.units_completed} "
