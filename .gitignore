@@ -52,3 +52,6 @@ anchor_sessions/
 labeling-sheet.md
 reserve-list.md
 relabel-sheet.md
+
+# v2 judge-run outputs (raw judge responses + scores; commit-after-unblind is a later call)
+judge-runs/
