@@ -142,7 +142,7 @@ Each is a finding, published as stated:
 
 | Date | Section | What changed | Why | Impact on claims |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| 2026-09-06 | §5 | Clarification, not a change: "unparseable" in the parse-failure rule (`judge-prompts/README.md`) fixed as lenient extraction — the first JSON object found in the response, scanning forward; score valid iff integer in {0,1,2,3} (bool/float excluded, single-digit string coerced); refusal invalid regardless of text. Implemented in `judge_harness/parse.py` (PR #15), frozen before any judge output on validation units was seen. | The rule targeted unusable output, not formatting compliance; strict parsing would inflate the missing count for reasons orthogonal to judge quality. | None — the missing count measures the intended construct. |
 
 ## 10. Artifacts and freeze checklist
 
