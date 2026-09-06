@@ -14,12 +14,18 @@ dependencies = ["radon>=6.0,<7", "pathspec>=0.12,<1"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "ruff==0.15.15"]
+# v2 judge harness (methodology/judge_harness). Not a CLI runtime dependency.
+judge = ["anthropic>=1.4,<2"]
 
 [project.scripts]
 "frictionmap" = "frictionmap.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/frictionmap"]
+
+[tool.pytest.ini_options]
+# methodology/judge_harness is importable as `judge_harness` in tests.
+pythonpath = ["methodology"]
 
 [tool.ruff]
 line-length = 120
