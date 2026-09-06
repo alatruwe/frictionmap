@@ -36,9 +36,15 @@ def test_render_scores_flags_and_justification_encoding(tmp_path):
     assert [a.attempt for a in ledger[1]] == [1, 2] and ledger[1][1].justification == ["not", "a string"]
 
 
-def test_update_manifest_merges_passes(tmp_path):
-    update_manifest(tmp_path, {"run_id": "x", "passes": {"v1-pass1": {"calls": 2}}})
-    update_manifest(tmp_path, {"passes": {"v1-pass1": {"missing": 0}, "v1-pass2": {"calls": 1}}, "mode": "dry-run"})
+def test_update_manifest_merges_passes_prompts_and_scaffold(tmp_path):
+    update_manifest(tmp_path, {"run_id": "x", "passes": {"v1-pass1": {"calls": 2}},
+                               "prompts": {"v1": {"sha256": "aaa"}}, "scaffold_tokens": {"v1": 3000}})
+    update_manifest(tmp_path, {"passes": {"v1-pass1": {"missing": 0}, "v1-pass2": {"calls": 1}},
+                               "mode": "dry-run", "prompts": {"paraphrase-a": {"sha256": "bbb"}},
+                               "scaffold_tokens": {"paraphrase-a": 2990}})
     m = read_manifest(tmp_path)
     assert m["run_id"] == "x" and m["mode"] == "dry-run"
     assert m["passes"] == {"v1-pass1": {"calls": 2, "missing": 0}, "v1-pass2": {"calls": 1}}
+    # a later invocation with different passes keeps earlier prompt records (smoke-run regression)
+    assert m["prompts"] == {"v1": {"sha256": "aaa"}, "paraphrase-a": {"sha256": "bbb"}}
+    assert m["scaffold_tokens"] == {"v1": 3000, "paraphrase-a": 2990}

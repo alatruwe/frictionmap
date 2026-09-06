@@ -144,15 +144,23 @@ def read_manifest(run_dir: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+MERGED_KEYS = ("passes", "prompts", "scaffold_tokens")
+
+
 def update_manifest(run_dir: Path, updates: dict) -> dict:
-    """Shallow-merge top-level keys; 'passes' merges per pass_id."""
+    """Shallow-merge top-level keys. 'passes', 'prompts' and 'scaffold_tokens'
+    merge per entry so a later invocation with different passes keeps what
+    earlier ones recorded."""
     run_dir.mkdir(parents=True, exist_ok=True)
     manifest = read_manifest(run_dir)
     for key, value in updates.items():
-        if key == "passes":
-            manifest.setdefault("passes", {})
-            for pass_id, info in value.items():
-                manifest["passes"].setdefault(pass_id, {}).update(info)
+        if key in MERGED_KEYS:
+            manifest.setdefault(key, {})
+            for name, info in value.items():
+                if isinstance(info, dict):
+                    manifest[key].setdefault(name, {}).update(info)
+                else:
+                    manifest[key][name] = info
         else:
             manifest[key] = value
     tmp = run_dir / (MANIFEST_NAME + ".tmp")
