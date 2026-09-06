@@ -86,3 +86,7 @@ Task count has a floor as well as a ceiling (pre-registration §7). The floor is
 If Haiku fails the validation gate, Sonnet 5 does not inherit validation. Per §5: new pre-registered run — full validation pass ($17.95 for all five passes), 3-rerun stability, 2-paraphrase perturbation, same thresholds — then transfer.
 
 Transfer numbers under Sonnet 5: every Haiku figure ×2. Full population at mid-mid → $988 batch, over C → subsample. 200 tasks → $395, over C. **100 tasks → $198, fits.** The escalation path at mid-mid therefore runs on half the task count of the Haiku path; the ceiling rule handles this without amendment, and the task-count difference is reported alongside results.
+
+---
+
+**Addendum 2026-09-06 (first judge run, anchor smoke pass):** measured scaffold token counts via `count_tokens` (system prompt + user template with empty substitution): v1 = 3,464; paraphrase-a = 3,455; paraphrase-b = 3,479, vs. the S = 3,000 assumption (~15% higher). First live response input on v1: 3,501 tokens. Validation cost unaffected (~$2 projected vs. $9 budgeted). At transfer scale the §7 boundary tightens marginally against full-population; expected outcome at mid-mid (subsample at 200 tasks) unchanged. Figures recorded per the token-assumptions provision above ("estimate, exact count recorded at first judge run"); the frozen tables are not edited.
