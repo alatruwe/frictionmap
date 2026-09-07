@@ -97,7 +97,7 @@ Per submission folder: candidate files = `*.traj` + `*.json`; dedupe on stem, tr
 
 ## 4. Boundary rules (SAGE, Trae) — templates with provenance
 
-**Derivation protocol (both rules):** rule inferred from a deterministic inspection sample, blind to resolution status, no marker counting. Validated by the parse harness on a **disjoint** sample. The inspection sample and the rule as derived are logged below; post-derivation changes to either rule are §9-logged deviations. Each rule carries a `rule_version` that every unit it produces records (§9).
+**Derivation protocol (both rules):** rule inferred from a deterministic inspection sample, blind to resolution status, no marker counting. Validated by the parse harness on a **disjoint** sample. The inspection sample and the rule as derived are logged below; post-derivation changes to either rule are §9-logged deviations. Each rule carries a `rule_version` that every unit it produces records (§9). Unit text excludes the boundary delimiters themselves (SAGE: the `THOUGHT:` label; Trae: the `<think>` opener and the final `</think>`); interior content is verbatim (session-2 build confirmation, 2026-09-07).
 
 ### 4.1 SAGE end-boundary rule
 
