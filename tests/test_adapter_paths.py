@@ -38,6 +38,8 @@ BASH_RULE_TABLE = [
     ("echo hi > out.txt", ["out.txt"]),
     ("python run.py >> log.txt", ["run.py", "log.txt"]),
     ("ls > listing.txt 2>&1", ["listing.txt"]),
+    ("> empty.txt", ["empty.txt"]),
+    (">> log.txt", ["log.txt"]),
     # compound
     ("cat a.py | grep foo", ["a.py"]),
     ("cat a.py && python b.py", ["a.py", "b.py"]),

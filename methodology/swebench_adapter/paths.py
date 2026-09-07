@@ -157,6 +157,9 @@ def bash_paths(cmd: str) -> list[str]:
             continue
         redirects = _redirect_targets(tokens)                          # R5 (appended after the command's own paths)
         tokens = _strip_redirects(tokens)
+        if not tokens:                                                 # e.g. a bare `> file` segment
+            found.extend(redirects)
+            continue
         name = tokens[0].rsplit("/", 1)[-1]
         if name in READ_CMDS:                                          # R2
             found.extend(t for t in _positional(tokens, _VALUE_FLAGS.get(name, set())) if not t.isdigit())
