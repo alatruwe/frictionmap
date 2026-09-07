@@ -23,7 +23,8 @@ def test_classes_denominator_and_quarantine(tmp_path, fence):
     assert v.n_file_failures == 2 and v.n_unit_failures == 1 and v.rate == 0.6 and v.over_threshold
     assert v.n_units == 2 and v.n_trajectories_with_units == 2 and v.n_zero_action_trajectories == 1
     classes = {name: cls for name, cls, _ in v.quarantine}
-    assert classes == {"preds.json": NON_TRAJECTORY, "a__a-2.traj": "file", "a__a-3.traj": "file", "a__a-4.traj": "unit"}
+    assert classes == {"preds.json": NON_TRAJECTORY, "a__a-2.traj": "file", "a__a-3.traj": "file",
+                       "a__a-4.traj": "unit"}
     qdir = tmp_path / "q"
     validate(root, qdir)
     lines = (qdir / f"{folder}.txt").read_text().splitlines()

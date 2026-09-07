@@ -58,9 +58,11 @@ def test_thought_structure_absent_is_unit_level_failure(tmp_path, fence):
 def test_epam_free_standing_thoughts_attach_to_next_action_in_document_order(tmp_path, fence):
     body = json.dumps([{
         "zz": {"author_name": "Thoughts", "message": "first", "input_text": ""},
-        "aa": {"author_name": "Str Replace Editor", "message": "obs", "input_text": "{'command': 'view', 'path': 'x/a.py'}"},
+        "aa": {"author_name": "Str Replace Editor", "message": "obs",
+               "input_text": "{'command': 'view', 'path': 'x/a.py'}"},
         "mm": {"author_name": "Thoughts", "message": "  ", "input_text": ""},
-        "bb": {"author_name": "Run Command Line Tool", "message": "obs", "input_text": "{'command': 'cd /r && python t.py'}"},
+        "bb": {"author_name": "Run Command Line Tool", "message": "obs",
+               "input_text": "{'command': 'cd /r && python t.py'}"},
         "cc": {"author_name": "Thoughts", "message": "wrap", "input_text": ""},
     }])
     r = _extract(tmp_path, "20250804_epam-ai-run-claude-4-sonnet", "x__y-1.traj", body)
@@ -103,7 +105,8 @@ def test_sonar_thinking_block_attaches_to_tool_calls_free_standing_without(tmp_p
         return {"role": "assistant", "blocks": [{"block_type": "thinking", "content": think, "num_tokens": 7},
                                                 {"block_type": "text", "text": "t"}],
                 "additional_kwargs": {"tool_calls": calls}}
-    call = {"function": {"name": "str_replace_based_edit_tool", "arguments": json.dumps({"command": "view", "path": "/t/a.py"})}}
+    call = {"function": {"name": "str_replace_based_edit_tool",
+                         "arguments": json.dumps({"command": "view", "path": "/t/a.py"})}}
     data = [{"role": "system", "blocks": []}, msg("free", []), msg("in", [call]), {"role": "tool", "blocks": []},
             msg("bye", [])]
     r = _extract(tmp_path, "20251205_sonar-foundation-agent_claude-opus-4-5", "x__y-1.json", data)
@@ -149,7 +152,8 @@ def test_think_tool_think_calls_are_free_standing_and_other_calls_anchor(tmp_pat
              "tool_calls": [call("execute_bash", {"command": "ls"})]},
             {"role": "assistant", "content": [], "tool_calls": [call("think", {"thought": "plan"})]},
             {"role": "tool", "content": "ok"},
-            {"role": "assistant", "content": [], "tool_calls": [call("str_replace_editor", {"command": "view", "path": "/t/a.py"})]},
+            {"role": "assistant", "content": [],
+             "tool_calls": [call("str_replace_editor", {"command": "view", "path": "/t/a.py"})]},
             {"role": "assistant", "content": [], "tool_calls": [call("think", {"thought": "   "})]}]
     r = _extract(tmp_path, "20250524_openhands_claude_4_sonnet", "x__y-1.json", data)
     assert r.structure_present                        # n/a → True
@@ -164,7 +168,8 @@ def test_think_tool_think_calls_are_free_standing_and_other_calls_anchor(tmp_pat
 
 def test_unit_record_to_dict_carries_provenance(tmp_path, fence):
     r = _extract(tmp_path, "20250928_trae_doubao_seed_code", "x__y-1.json",
-                 [{"role": "assistant", "content": "<think>t</think><function=execute_bash><parameter=command>cat a.py</parameter></function>"}])
+                 [{"role": "assistant", "content": "<think>t</think><function=execute_bash>"
+                                                   "<parameter=command>cat a.py</parameter></function>"}])
     d = r.units[0].to_dict()
     assert d["submission"] == "20250928_trae_doubao_seed_code" and d["file"] == "x__y-1.json"
     assert d["rule_version"] == "trae-b-1" and d["anchor_step"] == 0 and d["anchor_files"] == ["a.py"]

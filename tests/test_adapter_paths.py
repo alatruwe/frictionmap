@@ -82,7 +82,8 @@ def test_epam_input_text_literal_eval_never_json():
 
 
 def test_openhands_and_sonar_structured_args():
-    assert action_from_args("str_replace_editor", {"command": "view", "path": "/testbed/a.py"}).paths == ("/testbed/a.py",)
+    a = action_from_args("str_replace_editor", {"command": "view", "path": "/testbed/a.py"})
+    assert a.paths == ("/testbed/a.py",)
     assert action_from_args("str_replace_based_edit_tool", {"command": "create", "path": "/t/b.py",
                                                             "file_text": "x"}).paths == ("/t/b.py",)
     assert action_from_args("execute_bash", {"command": "cat /testbed/c.py"}).paths == ("/testbed/c.py",)
@@ -109,7 +110,8 @@ def test_sweagent_old_action_verbs_and_edit_state():
     assert sweagent_old_action("create reproduce.py\n", st).paths == ("reproduce.py",)
     a = sweagent_old_action("edit 1:1\nfrom astropy import x\nend_of_edit", st)
     assert a.tool == "edit" and a.paths == ("reproduce.py",)
-    assert sweagent_old_action("open astropy/modeling/separable.py 100\n", st).paths == ("astropy/modeling/separable.py",)
+    opened = sweagent_old_action("open astropy/modeling/separable.py 100\n", st)
+    assert opened.paths == ("astropy/modeling/separable.py",)
     assert sweagent_old_action("edit 10:20\nfoo\nend_of_edit", st).paths == ("astropy/modeling/separable.py",)
     assert sweagent_old_action('search_dir "def separability_matrix"', st).paths == ()
     assert sweagent_old_action('search_dir "x" astropy/modeling', st).paths == ("astropy/modeling",)

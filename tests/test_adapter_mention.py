@@ -13,7 +13,8 @@ import pytest
 from swebench_adapter.mention import EXACT_PATH, UNIQUE_BASENAME, PATH_SUFFIXES, MentionIndex, attribute_mentions
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-PIN_SHA256 = "a96d7d053f85ce0c793782fafbdce80d090ea3c760e01ef027685438bc93f90e"   # git show e2d6db2:src/frictionmap/attribution.py
+# sha256 of `git show e2d6db2:src/frictionmap/attribution.py`
+PIN_SHA256 = "a96d7d053f85ce0c793782fafbdce80d090ea3c760e01ef027685438bc93f90e"
 CORPUS_ROOT = pathlib.Path(os.environ.get("FRICTIONMAP_V2_CORPUS", "~/Projects/v2-sessions")).expanduser()
 
 
@@ -79,7 +80,8 @@ def test_fixture_against_pinned_attribute_thinking_blocks(fence):
                     tier, paths = index.attribute(b.thinking)
                     if b.attribution.tier in (EXACT_PATH, UNIQUE_BASENAME):
                         n_mention += 1
-                        assert (tier, paths) == (b.attribution.tier, list(b.attribution.file_paths)), (sid, b.thinking[:80])
+                        expected = (b.attribution.tier, list(b.attribution.file_paths))
+                        assert (tier, paths) == expected, (sid, b.thinking[:80])
                     else:
                         assert tier is None and paths == [], (sid, b.thinking[:80])
     assert n_blocks > 0 and n_mention > 0, (n_blocks, n_mention)
