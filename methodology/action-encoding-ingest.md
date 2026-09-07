@@ -1,10 +1,10 @@
 # Action-encoding ingest — join coverage and spot-check (Phase 2 → Phase 3 handoff)
 
-*2026-09-07. Task 1 (ingest) run by `methodology/scripts/ingest_action_encodings.py`; diagnostic by `methodology/scripts/diag_trae_unjoined.py`. Status: **STOPPED at the Task 1 hard requirement** — one agent joins below 100%. Task 2 (the 20-trajectory reproducibility spot-check) was not started, per the handoff: the stop returns to [A] before any spot-check is drawn. Nothing in this report is a fix; the numbers are as observed.*
+*2026-09-07. Task 1 (ingest) run by `methodology/scripts/ingest_action_encodings.py`; diagnostic by `methodology/scripts/diag_trae_unjoined.py`; Task 2 (spot-check) by `methodology/scripts/spot_check_action_encodings.py`, report in `action-encoding-spot-check.md`. History, kept as written: Task 1 first stopped at the hard requirement (Trae-doubao 483/500); [A] ruled the same day (decision recorded below) and Task 2 then ran to a 20/20 match. Nothing in this report is a fix; the numbers are as observed.*
 
 ## Provenance
 
-The action encoding used as Phase 3's Q2 comparison baseline is the authors' 13-symbol enriched encoding (arXiv 2604.02547; replication package Zenodo 19351830, CC BY 4.0). Both the encoding scheme and the parse are theirs: we consume their shipped `data/enriched_encodings_all.csv` directly and do not reimplement or modify their encoder (`scripts/data_processing/extract_enriched_encoding_all.py`, sha256 `4754346e…5fe`; `scripts/config.py`, sha256 `8f6da96e…76e`, matching the hash vendored in our registry). Our only contribution is the join of their rows to our parsed population and the reproducibility check. **Reproducibility on a 20-trajectory seeded sample is not yet verified** — that check is gated behind the coverage decision below and this paragraph will be completed when it runs.
+The action encoding used as Phase 3's Q2 comparison baseline is the authors' 13-symbol enriched encoding (arXiv 2604.02547; replication package Zenodo 19351830, CC BY 4.0). Both the encoding scheme and the parse are theirs: we consume their shipped `data/enriched_encodings_all.csv` directly and do not reimplement or modify their encoder (`scripts/data_processing/extract_enriched_encoding_all.py`, sha256 `4754346e…5fe`; `scripts/config.py`, sha256 `8f6da96e…76e`, matching the hash vendored in our registry). Our only contribution is the join of their rows to our parsed population and a reproducibility check. We verified reproducibility on a 20-trajectory seeded sample (seed 20260907; 5 SAGE, 5 Trae-doubao, 10 across the remaining 11 agents): their script, run unmodified from a byte-identical copy on our downloaded copies of those trajectory files, reproduced their shipped CSV rows exactly, 20/20 on the encoding string and 20/20 on every CSV column (`action-encoding-spot-check.md`). Their CSV has no row for 17 of our 500 Trae-doubao trajectories, because their Trae parser emits no steps for a file whose assistant messages carry neither `tool_calls` nor fenced code; those 17 are carried as unjoined (see below).
 
 ## Their CSV — structure
 
@@ -65,7 +65,7 @@ These are not key mismatches and not a download gap. They are ordinary trajector
 - Their `extract_steps_trae()` reads an assistant message's `tool_calls` list, or failing that the ```` ``` ```` code fences in its text. It never reads `<function=…>` XML (the handoff's second blind spot).
 - Trae-doubao has **no `tool_calls` anywhere** (0/500 files) and issues every action as `<function=…>` XML. So their step list for this agent is built only from incidental code fences in assistant prose.
 - Exactly 17 of 500 files have zero code fences in assistant messages, and those 17 are exactly the unjoined set. Their parser returns 0 steps → `encode_trajectory` returns `None` → their `main()` counts them as `n_skip` and writes no row. Deterministic, reproduced on all 17.
-- The three joined controls checked (astropy-12907, astropy-13033, django-11099) encode to `G G … G` only — 16, 28 and 4 symbols respectively, every one `G`. This is a preview of the degeneracy the handoff expects the Task 2 note to document for Trae-doubao; it is recorded here as a diagnostic observation, not as the spot-check.
+- The three joined controls checked encode to `G` only (see the named observation below).
 
 Verbatim diagnostic output:
 
@@ -92,22 +92,28 @@ CONTROL  astropy__astropy-13033             asst= 21 tool_calls=0 fences= 56 fn_
 CONTROL  django__django-11099               asst= 20 tool_calls=0 fences=  8 fn_tags= 20 their_steps=  4 encoding=G G G G
 ```
 
+**Observation (Trae-doubao all-`G` rows).** The three joined Trae-doubao controls run through their parser (astropy-12907, astropy-13033, django-11099) encode to `G G … G` only — 16, 28 and 4 symbols respectively, every one `G`. Because their Trae parser builds this agent's step list from incidental code fences in assistant prose rather than from the `<function=` calls that carry the actions, each fence is classified as a general step and no `L*`/`P*`/`V*` symbol fires. Descriptive only; the spot-check report extends this to the 5 sampled rows (all `G`, 85/85 symbols) and to the agent's 483 CSV rows (`G` 99.7%).
+
 Side note on the download: per-folder file counts for the 13 population agents equal the CSV's per-agent row counts exactly for the 12 complete agents (443/496/500/465/…), so their skips are the only source of loss inside the population.
 
-## Decision returned to [A]
+## Decision (A, 2026-09-07): carry the 17 as unjoined, reason recorded
 
-The 17 rows cannot be joined because their pipeline produced no encoding for them; there is no key to normalize. Options, none taken here:
+No imputation and no synthetic empty encoding — their pipeline chose not to emit these rows, and we do not edit their artifact. Our parse covering all 500 while theirs covers 483 is a substrate fact the baseline caveat carries. The joined table keeps the 17 rows with `joined=0`; the reason is the one documented above (their Trae parser: zero steps, file skipped by their `main()`).
 
-1. Keep the population at 500 and carry the 17 as `joined=0` with reason "their parser: zero steps"; Q2's Trae-doubao baseline covers 483, and the writeup states it. Simplest and consistent with "their encoding, their parse".
-2. Treat the 17 as outside the Q2 comparison set only (not the friction population).
-3. Anything that produces an encoding for the 17 is out of scope by the handoff (no reimplementation, no correction).
+**Pre-committed analysis rule.** Trajectories without an encoding row are excluded from encoding-involving analyses only (Q2's beyond-the-encoding comparison) and retained in all friction-only analyses. Exclusion counts are reported per agent (currently: Trae-doubao 17/500; all other agents 0).
 
-Task 2 is untouched and ready to run once the decision is in. Mechanism validated by the diagnostic: their script imports and runs from a byte-identical scratch copy under `uv run --no-project --with pandas --with numpy` (pandas/numpy are not in our environment; nothing is installed into the project). Their package was not modified: file hashes above are unchanged, no file under the package was created or modified today, and no `__pycache__` was written into their `scripts/` tree.
+This is a data-availability fact recorded in methods, not a change to pre-registration §§2–8: the pre-registration made no coverage promise about their CSV, so no §9 deviations-log entry is made.
+
+## Spot-check (Task 2) — summary
+
+Full report: `action-encoding-spot-check.md` (generated; seed **20260907**, recorded in `action_encoding/spotcheck.py` as `SEED`). Sample: 5 SAGE, 5 Trae-doubao, 10 across the remaining 11 agents (10 distinct agents, one trajectory each), all drawn from the joined population — for Trae-doubao that is the joined 483, the 17 having no CSV row to compare against. Their script ran end to end, unmodified, from a byte-identical scratch mirror containing only the 20 sampled files (pandas/numpy supplied by `uv run --no-project --with …`; nothing installed into the project). Result: **20/20 exact match** on `enriched_encoding` and **20/20** on all ten CSV columns. Their package was not modified: the hashes above are unchanged after both runs, no file under the package was created or modified today, and no `__pycache__` was written into their `scripts/` tree.
+
+Symbol-distribution note for the baseline caveat (observed rows, descriptive): the 5 SAGE rows fire `Ls L P Vp Ve Vr G` and never `Pr` (nor `Lb`/`Lt`, which their no-Lb/Lt group cannot emit); agent-wide over 500 rows `Pr` never fires. The 5 Trae-doubao rows are 85/85 `G`; agent-wide over 483 rows `G` is 99.7% and `Ls L Ps Pi Pr Vf Vr` never fire.
 
 ## Acceptance criteria — status
 
-1. Join coverage per agent reported — yes; 12/13 at 100%, **STOPPED** on Trae-doubao (483/500) with the 17 keys listed.
-2. Spot-check 20/20 — **not run** (gated by 1).
-3. Their script untouched — yes (hashes and mtimes verified).
-4. Seed recorded — n/a until Task 2 runs.
-5. Provenance paragraph — present, with the reproducibility clause explicitly pending.
+1. Join coverage per agent reported — yes; 12/13 at 100%, Trae-doubao 483/500 → stopped, returned, decided (carry as unjoined).
+2. Spot-check — **20/20 exact match** (encoding and full row).
+3. Their script untouched — yes (hashes and mtimes verified after each run).
+4. Seed recorded — `20260907`, in `action_encoding/spotcheck.py` and both reports.
+5. Provenance paragraph — present, reproducibility clause stated.
