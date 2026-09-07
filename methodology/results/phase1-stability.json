@@ -1,0 +1,121 @@
+{
+ "passes": {
+  "paraphrase-a": {
+   "n_scored": 100,
+   "n_missing": 0,
+   "n_incomplete": 0
+  },
+  "paraphrase-b": {
+   "n_scored": 100,
+   "n_missing": 0,
+   "n_incomplete": 0
+  },
+  "v1-pass1": {
+   "n_scored": 100,
+   "n_missing": 0,
+   "n_incomplete": 0
+  },
+  "v1-pass2": {
+   "n_scored": 100,
+   "n_missing": 0,
+   "n_incomplete": 0
+  },
+  "v1-pass3": {
+   "n_scored": 100,
+   "n_missing": 0,
+   "n_incomplete": 0
+  }
+ },
+ "rerun_agreement": {
+  "n_passes": 3,
+  "n_units": 100,
+  "n_compared": 100,
+  "n_excluded_missing": 0,
+  "n_agree": 99,
+  "agreement_pct": 99.0,
+  "disagreeing_positions": [
+   11
+  ]
+ },
+ "pairwise_kappa": {
+  "v1-pass1<->paraphrase-a": {
+   "n_units": 100,
+   "n_compared": 100,
+   "n_excluded_missing": 0,
+   "quadratic_weighted_kappa": 0.8371,
+   "disagreeing_positions": [
+    9,
+    10,
+    14,
+    16,
+    22,
+    40,
+    48,
+    52,
+    55,
+    57,
+    63,
+    64,
+    70,
+    90,
+    93,
+    94,
+    97
+   ]
+  },
+  "v1-pass1<->paraphrase-b": {
+   "n_units": 100,
+   "n_compared": 100,
+   "n_excluded_missing": 0,
+   "quadratic_weighted_kappa": 0.8108,
+   "disagreeing_positions": [
+    9,
+    10,
+    11,
+    12,
+    16,
+    22,
+    28,
+    29,
+    34,
+    52,
+    55,
+    57,
+    64,
+    74,
+    81,
+    94,
+    95,
+    97,
+    98,
+    100
+   ]
+  },
+  "paraphrase-a<->paraphrase-b": {
+   "n_units": 100,
+   "n_compared": 100,
+   "n_excluded_missing": 0,
+   "quadratic_weighted_kappa": 0.8406,
+   "disagreeing_positions": [
+    11,
+    12,
+    14,
+    28,
+    29,
+    34,
+    40,
+    48,
+    63,
+    70,
+    74,
+    81,
+    90,
+    93,
+    94,
+    95,
+    98,
+    100
+   ]
+  }
+ }
+}
