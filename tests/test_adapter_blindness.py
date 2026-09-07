@@ -13,7 +13,7 @@ import sys
 
 import pytest
 
-from tests._adapter_fakes import EPAM, FENCED_NAMES, SWEAGENT_OLD, fence, is_fenced, make_replication_tree
+from tests._adapter_fakes import EPAM, FENCED_NAMES, SWEAGENT_OLD, is_fenced, make_replication_tree
 
 ADAPTER_DIR = pathlib.Path(__file__).resolve().parents[1] / "methodology" / "swebench_adapter"
 

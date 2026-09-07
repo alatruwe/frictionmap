@@ -9,8 +9,7 @@ from swebench_adapter import registry
 from swebench_adapter.discovery import INSTANCE_ID_RE, discover, instance_stem
 from swebench_adapter.loaders import FileLevelFailure, load_trajectory_file, shape_matches
 from swebench_adapter.sample import audit_sample
-from tests._adapter_fakes import (EPAM, OPENHANDS, SAGE, SONAR, SWEAGENT_OLD, TRAE, fence,
-                                  make_replication_tree)
+from tests._adapter_fakes import EPAM, OPENHANDS, SAGE, SONAR, SWEAGENT_OLD, TRAE, make_replication_tree
 
 POPULATION_13 = [
     "20240402_sweagent_claude3opus", "20240402_sweagent_gpt4", "20240620_sweagent_claude3.5sonnet",
