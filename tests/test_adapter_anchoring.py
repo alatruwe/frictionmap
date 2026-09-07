@@ -91,3 +91,15 @@ def test_single_fragment_unit_degrades_to_the_native_emission():
     r = anchor([E("solo", 0), A(0)])
     (u,) = r.units
     assert u.fragment_count == 1 and recover_fragments(u) == [u.text]
+
+
+def test_d3_harness_prefix_is_no_emission_only_when_passed():
+    events = [E("Exit due to cost limit", 0), A(0), E("  Exit due to context window", 1), E("real", 2)]
+    filtered = anchor(events, harness_prefixes=("Exit due to",))
+    assert [u.text for u in filtered.units] == ["real"]
+    assert filtered.n_harness_strings == 2 and filtered.n_empty_anchors == 1 and filtered.n_emissions == 1
+    unfiltered = anchor(events)
+    assert unfiltered.n_harness_strings == 0 and len(unfiltered.units) == 2
+    # prefix is a prefix, not a substring
+    r = anchor([E("We should Exit due to X", 0), A(0)], harness_prefixes=("Exit due to",))
+    assert len(r.units) == 1 and r.n_harness_strings == 0

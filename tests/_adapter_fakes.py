@@ -65,18 +65,18 @@ def make_replication_tree(tmp_path: pathlib.Path, *, submissions: dict[str, dict
     Returns the trajectories root (the explicit argument every entry point takes).
     """
     pkg = tmp_path / "replication-package"
-    (pkg / "data").mkdir(parents=True)
-    (pkg / "results").mkdir()
+    (pkg / "data").mkdir(parents=True, exist_ok=True)
+    (pkg / "results").mkdir(exist_ok=True)
     # Decoys are written through os.open so the `fence` fixture (which guards
     # builtins.open / Path.open) can already be active when the tree is built.
     for name in FENCED_NAMES:
         _raw_write(pkg / "data" / name, "DECOY — must never be read\n")
     _raw_write(pkg / "results" / "summary.csv", "DECOY\n")
     root = pkg / "dataset" / "trajectories" / "verified"
-    root.mkdir(parents=True)
+    root.mkdir(parents=True, exist_ok=True)
     for folder, files in (submissions or {}).items():
         d = root / folder
-        d.mkdir()
+        d.mkdir(exist_ok=True)
         for fname, content in files.items():
             _raw_write(d / fname, content if isinstance(content, str) else json.dumps(content))
     return root

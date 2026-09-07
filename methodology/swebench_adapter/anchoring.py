@@ -13,6 +13,10 @@ Rules implemented:
   4. Empty anchors: an action step with no preceding reasoning produces no
      unit. Empty or whitespace-only designated text is *no emission* — it is
      counted (`n_empty_emissions`) and dropped; zero-length units never exist.
+     Harness strings (D3, spec rev 3 §2.4): designated text beginning with a
+     documented harness template prefix (`harness_prefixes`, passed by the
+     extractor for the families where the template is documented) is *no
+     emission*, counted as `n_harness_strings`.
   5. Joiner is "\\n\\n"; `Unit.text` is the judge input.
   6. Reversibility: every unit stores `fragment_count` and per-fragment
      (start, end) offsets into `text`, so the native-emission unit is fully
@@ -84,6 +88,7 @@ class AnchoringResult:
     n_empty_anchors: int                    # action steps with no preceding reasoning (rule 4)
     n_empty_emissions: int                  # designated slots empty / whitespace-only (rule 4, Q3)
     n_emissions: int                        # non-empty emissions seen
+    n_harness_strings: int = 0              # designated slots excluded by the §2.4 documented-prefix rule (D3)
 
     @property
     def n_terminal_units(self) -> int:
@@ -119,15 +124,24 @@ def _build_unit(pending: list[Emission], step: ActionStep | None, step_ordinal: 
                 terminal=step is None, emission_kind=emission_kind)
 
 
-def anchor(events: list[Event]) -> AnchoringResult:
+def is_harness_string(text: str, harness_prefixes: tuple[str, ...]) -> bool:
+    """§2.4 (D3): designated text that begins with a documented harness template prefix."""
+    stripped = text.lstrip()
+    return any(stripped.startswith(p) for p in harness_prefixes)
+
+
+def anchor(events: list[Event], harness_prefixes: tuple[str, ...] = ()) -> AnchoringResult:
     """Turn an ordered event sequence into step-anchored units (spec §2)."""
     units: list[Unit] = []
     pending: list[Emission] = []
-    n_steps = n_empty_anchors = n_empty_emissions = n_emissions = 0
+    n_steps = n_empty_anchors = n_empty_emissions = n_emissions = n_harness = 0
     for ev in events:
         if isinstance(ev, Emission):
             if _is_empty(ev.text):
                 n_empty_emissions += 1
+                continue
+            if is_harness_string(ev.text, harness_prefixes):
+                n_harness += 1
                 continue
             n_emissions += 1
             pending.append(ev)
@@ -143,7 +157,8 @@ def anchor(events: list[Event]) -> AnchoringResult:
     if pending:
         units.append(_build_unit(pending, None, None))
     return AnchoringResult(units=units, n_action_steps=n_steps, n_empty_anchors=n_empty_anchors,
-                           n_empty_emissions=n_empty_emissions, n_emissions=n_emissions)
+                           n_empty_emissions=n_empty_emissions, n_emissions=n_emissions,
+                           n_harness_strings=n_harness)
 
 
 def recover_fragments(unit: Unit) -> list[str]:
