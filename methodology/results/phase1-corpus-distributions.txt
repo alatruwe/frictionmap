@@ -1,0 +1,11 @@
+Phase 1 characterization — per-corpus score distributions (counts only)
+Human = labels.csv first pass. Judge = v1-pass1. Corpus from sample-manifest.csv.
+
+  source  corpus         n      0    1    2    3
+  human   attune        54     30   16    6    2
+  human   brownfield    46     26   10    4    6
+  judge   attune        54     29   19    5    1
+  judge   brownfield    46     22   12    5    7
+
+  units per corpus sum to 100.
+Counts only. Interpretation is W1 writing, not part of this output.

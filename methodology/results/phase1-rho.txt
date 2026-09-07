@@ -1,0 +1,39 @@
+Phase 1 characterization — judge-vs-deterministic Spearman ρ (§5 secondary)
+Judge scores: v1-pass1. Signal values: v1 per-file raw values (score_corpus, per corpus).
+Corpus hash gate: 147 session files verified against corpus-manifest.txt.
+
+Unit accounting (100 validation units):
+  attributed (non-empty file_paths): 85
+  excluded (empty file_paths):        15
+  sum:                                100
+  of attributed, multi-file blocks (count toward each file): 24
+
+Per-file aggregation (rule fixed in §9 before computation):
+  distinct files with >= 1 sample block: 99
+  files with >= 3 sample blocks (kept):     9  (attune 8, brownfield 1)
+  sample blocks covered by kept files:  38 block-file pairs
+  files by sample-block count: 1:78, 2:12, 3:5, 4:1, 5:1, 6:1, 8:1
+
+Spearman ρ (mean judge score vs signal raw value), n = 9 kept files:
+  signal                  rho        p  n_files   note
+  markers_per_100w     0.3743   0.3210        9   9/9 files have nonzero signal
+  reread_bursts       -0.4257   0.2533        9   7/9 files have nonzero signal
+  edit_churn           0.2447   0.5257        9   9/9 files have nonzero signal
+
+Kept files (basenames only; mean_judge over that file's sample blocks):
+  corpus      basename                           n_blk  mean_j  markers  reread  churn
+  attune      DECISIONS.md                           5   0.200    0.191      17     10
+  attune      DECISIONS_ARCHIVE.md                   6   0.667    0.339      32      6
+  attune      IMPLEMENTATION.md                      8   0.500    0.299      23     48
+  attune      NOTES.md                               3   0.000    0.451       4      2
+  attune      embeddings.py                          3   1.000    0.265       0     14
+  attune      pyproject.toml                         3   1.000    0.303       0      3
+  attune      server.py                              3   1.000    0.313       4     25
+  attune      test_importer.py                       4   1.000    0.817       3     12
+  brownfield  base.py                                3   2.000    1.129       6     10
+
+Pre-registration §5, restated verbatim:
+
+**Judge-vs-deterministic agreement (secondary):** Spearman ρ between mean judge score per file and v1 per-file signal values, per signal, restricted to files with `n_blocks_attributed ≥ 3` (small-N floor; thin-evidence files are established attribution noise). No pass threshold — this is characterization, not gating. **Predictions:** ρ > 0 vs `markers_per_100w` (same substrate, overlapping construct); weaker or null vs reread bursts and edit churn (they measure action-level friction the judge cannot see from thinking text alone, except where the model narrates its actions). **Anticipated surprise, named in advance:** if judge-vs-churn ρ matched or exceeded judge-vs-markers, that would indicate models narrate action struggles thoroughly enough that text carries the action layer — an interesting result, not a failure.
+
+Characterization only. Interpretation is W1 writing, not part of this output.
