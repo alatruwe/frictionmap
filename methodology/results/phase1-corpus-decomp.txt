@@ -1,0 +1,54 @@
+Counts only. Interpretation is W1 writing.
+
+Phase 1 characterization — per-corpus decomposition of judge-vs-human agreement
+Human = labels.csv first pass. Judge = v1-pass1. Corpus from sample-manifest.csv. Join on sheet_position.
+Script: methodology/scripts/compute_corpus_decomp.py. Units: 100.
+
+=== corpus = attune (n = 54) ===
+
+confusion (rows = human, cols = judge):
+          judge=0  judge=1  judge=2  judge=3
+human=0       23        6        1        0
+human=1        3       11        1        1
+human=2        2        2        2        0
+human=3        1        0        1        0
+
+exact agreement: 36 / 54 (66.7%)
+MAD (all units): 0.4444
+misses by distance: 1 step = 13, 2 steps = 4, 3 steps = 1
+quadratic-weighted kappa: 0.4216  (reproduces committed 0.4216)
+observed disagreement, mean (h - j)^2: 0.7037
+chance-expected disagreement, sum p_h(a) p_j(b) (a - b)^2: 1.2167
+
+=== corpus = brownfield (n = 46) ===
+
+confusion (rows = human, cols = judge):
+          judge=0  judge=1  judge=2  judge=3
+human=0       20        3        3        0
+human=1        2        7        1        0
+human=2        0        2        1        1
+human=3        0        0        0        6
+
+exact agreement: 34 / 46 (73.9%)
+MAD (all units): 0.3261
+misses by distance: 1 step = 9, 2 steps = 3, 3 steps = 0
+quadratic-weighted kappa: 0.8050  (reproduces committed 0.8050)
+observed disagreement, mean (h - j)^2: 0.4565
+chance-expected disagreement, sum p_h(a) p_j(b) (a - b)^2: 2.3412
+
+=== decision quantity (§9 row, 2026-09-26) ===
+
+delta = MAD_attune - MAD_brownfield, units with human score in {0, 1}, judge v1-pass1 vs human first pass
+  n attune (human in {0, 1}): 46
+  n brownfield (human in {0, 1}): 36
+  MAD_attune (subset):     0.3043
+  MAD_brownfield (subset): 0.3333
+  delta point estimate:    -0.0290
+  95% percentile bootstrap CI: [-0.2947, 0.2246]  (n_boot = 10000, seed = 26, resampled within each corpus)
+
+  n attune (human in {2, 3}): 8
+  n brownfield (human in {2, 3}): 10
+
+=== §9 row (verbatim) ===
+
+| 2026-09-26 | §5 (secondary view: per-corpus κ) | Reading rule for the per-corpus split, committed before the per-corpus decomposition exists. Known at commit time: per-corpus κ attune 0.4216 (n = 54), brownfield 0.8050 (n = 46), and per-corpus score counts (`results/phase1-corpus-distributions.txt`). Two candidate explanations: **(A) spread arithmetic** — the judge errs at similar rate and size in both corpora; attune κ is lower because attune scores bunch near 0 (human 3s: 2 vs 6), shrinking κ's chance-expected disagreement. **(B) judge deficit on attune text** — the judge errs more, or by more, on attune blocks. Decision quantity (one): Δ = MAD_attune − MAD_brownfield (judge `v1-pass1` vs human first pass), restricted to units with human score 0 or 1 (like-for-like cells; attune n = 46, brownfield n = 36), with a 95% percentile bootstrap CI (10,000 resamples of units within each corpus, seed 26). Rule: CI lower bound > 0 → reported as (B). Otherwise → reported as consistent with (A); if the CI includes 0, a small deficit is not ruled out at this n. A deficit confined to scores 2–3 is untestable (attune n = 8) and is stated as such. Reported descriptively regardless: per-corpus confusion matrices, exact agreement, misses by distance, chance-expected disagreement. | The per-corpus view is a registered guard; a reading chosen after the decomposition exists would be a story, not a rule. Restricting Δ to human scores 0–1 removes the spread difference the two explanations dispute. | Characterization only. No gate, band, or Q1/Q2 eligibility change; pooled κ decides per §5. |
