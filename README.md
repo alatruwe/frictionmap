@@ -81,9 +81,6 @@ The report picks one of four modes based on what the data surfaces.
 
 ## Roadmap
 
-- **v2 — friction maps for autonomous agents.** Extend FrictionMap beyond interactive
-  Claude Code sessions to autonomous agent trajectories (SWE-bench Verified): the same
-  file-level friction view for agent runs. Gated on the transfer study (see Research).
 - **v2 — semantic friction layer.** Add the validated LLM judge to the report as a layer
   next to the deterministic counts, reading what counting can't (e.g. an *actually* that
   reverses a plan vs. one that introduces a thought). Exploratory.
