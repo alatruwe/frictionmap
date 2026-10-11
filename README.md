@@ -81,15 +81,21 @@ The report picks one of four modes based on what the data surfaces.
 
 ## Roadmap
 
-- **v2 — friction maps for autonomous agents.** Extend FrictionMap beyond interactive
-  Claude Code sessions to autonomous agent trajectories (SWE-bench Verified) — the same
-  file-level friction view for agent runs. Gated on a transfer study: do v1's signals
-  carry over, and do they add information beyond action-sequence encodings?
-- **v2 — semantic friction scoring.** An LLM-judge layer scoring friction in reasoning
-  traces directly, beyond v1's deterministic counting. Gated on a pre-registered
-  validation study against blind human labels.
+- **v2 — semantic friction layer.** Add the validated LLM judge to the report as a layer
+  next to the deterministic counts, reading what counting can't (e.g. an *actually* that
+  reverses a plan vs. one that introduces a thought). Exploratory.
 - **Multi-agent support.** Adapters for Codex, Aider, Cursor, and other agents. Driven
   by demand — open an issue if you'd use this on non-Claude sessions.
+
+## Research
+
+- **LLM-judge validation (v2).** ✅ Done. A judge scoring friction in reasoning traces,
+  validated against blind human labels under a
+  [pre-registered protocol](https://github.com/alatruwe/frictionmap/blob/v2-prereg-freeze/methodology/pre-registration.md)
+  (κ = 0.66). Write-up: [Validating an LLM judge for reasoning traces](https://thecognitivestack.substack.com/p/validating-an-llm-judge-for-reasoning).
+- **Transfer study (v2).** In progress. Do v1's signals carry over to autonomous agent
+  trajectories on SWE-bench Verified, and do they add information beyond action-sequence
+  encodings?
 
 ## Caveats
 
@@ -104,10 +110,15 @@ function works, what it deliberately doesn't measure, and the methodological cav
 The `project_design/` folder contains the design documents from the build: scope,
 trade-offs, tested assumptions, ecosystem framing, and the parser-to-report data contract.
 
-Research methodology for the v2 judge study — pre-registration, cost budget, and SWE-bench trajectory recon — lives in [methodology/](methodology/).
+Research methodology for the v2 judge study lives in [methodology/](methodology/). The
+pre-registration, as frozen before any data, is at the
+[`v2-prereg-freeze` tag](https://github.com/alatruwe/frictionmap/blob/v2-prereg-freeze/methodology/pre-registration.md).
 
-Two essays document the calibration methodology and findings:
+Three essays document the calibration methodology and findings:
 
+- **[Validating an LLM judge for reasoning traces](https://thecognitivestack.substack.com/p/validating-an-llm-judge-for-reasoning)** — a pre-registered
+  validation of the v2 judge against blind human labels: what it gets right, where it
+  breaks, and what it can't see.
 - **[The craft of proxy measurement](https://thecognitivestack.substack.com/p/the-craft-of-proxy-measurement)** — how the v1 signals were calibrated, and why eight of eleven signals are parked at weight 0 with documented handoff records rather than dropped.
 - **[Friction in AI coding sessions: what the data shows](https://thecognitivestack.substack.com/p/friction-in-ai-coding-sessions)** — findings from running FrictionMap on the reference corpora.
 
